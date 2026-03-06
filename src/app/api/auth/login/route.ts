@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
     const normalized = email.trim().toLowerCase();
 
-    if (!isEmailAllowed(normalized)) {
+    if (!(await isEmailAllowed(normalized))) {
       return NextResponse.json({ error: 'This email is not allowed' }, { status: 403 });
     }
 
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: 'Bookshelf <onboarding@resend.dev>',
+      from: 'Bookshelf <noreply@open-bookshelf.app>',
       to: normalized,
       subject: 'Sign in to Bookshelf',
       html: `
