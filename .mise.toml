@@ -1,0 +1,32 @@
+[tools]
+node = "22"
+
+[env]
+# Local Docker Postgres (port 5433 to avoid clashing with any system Postgres on 5432)
+DATABASE_URL = "postgresql://bookshelf:bookshelf@localhost:5433/bookshelf"
+# Load secrets from .env.local (OPENROUTER_API_KEY, etc.) — file is gitignored
+_.file = ".env.local"
+
+[tasks.dev]
+description = "Start the Next.js dev server"
+run = "npm run dev"
+
+[tasks."db:push"]
+description = "Push Drizzle schema to the database"
+run = "npm run db:push"
+
+[tasks."db:studio"]
+description = "Open Drizzle Studio"
+run = "npm run db:studio"
+
+[tasks."docker:up"]
+description = "Start Postgres in Docker"
+run = "docker compose up -d"
+
+[tasks."docker:down"]
+description = "Stop Docker services"
+run = "docker compose down"
+
+[tasks."docker:reset"]
+description = "Wipe the database volume and restart"
+run = "docker compose down -v && docker compose up -d"
