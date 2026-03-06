@@ -2,8 +2,9 @@ import { db } from '@/lib/db';
 import { books, recommendations } from '@/lib/db/schema';
 import { BookCard } from '@/components/BookCard';
 import { LibraryFilters } from '@/components/LibraryFilters';
+import { EmptyLibrary } from '@/components/EmptyLibrary';
 import { Suspense } from 'react';
-import { asc, desc, ilike, eq, or, and } from 'drizzle-orm';
+import { asc, desc, ilike, eq, or, and, count } from 'drizzle-orm';
 import type { Book, Shelf } from '@/lib/types';
 import { requireUser } from '@/lib/auth/requireUser';
 
@@ -92,9 +93,13 @@ async function getBooks(params: SearchParams, userId: string): Promise<Book[]> {
   }));
 }
 
-async function LibraryGrid({ searchParams, userId }: { searchParams: SearchParams; userId: string }) {
+async function LibraryGrid({ searchParams, userId, hasBooks }: { searchParams: SearchParams; userId: string; hasBooks: boolean }) {
   const allBooks = await getBooks(searchParams, userId);
   const isNextRead = searchParams.shelf === 'next-read';
+
+  if (allBooks.length === 0 && !hasBooks && !isNextRead) {
+    return <EmptyLibrary />;
+  }
 
   return (
     <>
@@ -127,15 +132,23 @@ export default async function LibraryPage({
   const { userId } = await requireUser();
   const params = await searchParams;
 
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(books)
+    .where(eq(books.userId, userId));
+  const hasBooks = total > 0;
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="font-display text-4xl text-foreground mb-2">My Library</h1>
-      <p className="text-muted mb-6">Browse and manage your book collection</p>
-      <Suspense fallback={<div />}>
-        <LibraryFilters />
-      </Suspense>
+      {hasBooks && <p className="text-muted mb-6">Browse and manage your book collection</p>}
+      {hasBooks && (
+        <Suspense fallback={<div />}>
+          <LibraryFilters />
+        </Suspense>
+      )}
       <Suspense fallback={<div className="text-muted py-8 text-center">Loading…</div>}>
-        <LibraryGrid searchParams={params} userId={userId} />
+        <LibraryGrid searchParams={params} userId={userId} hasBooks={hasBooks} />
       </Suspense>
     </div>
   );

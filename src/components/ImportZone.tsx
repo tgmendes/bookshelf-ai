@@ -53,7 +53,7 @@ export function ImportZone() {
       setStatus('success');
       setMessage(`Imported ${imported} books!`);
 
-      setTimeout(() => router.push('/library'), 1200);
+      setTimeout(() => router.refresh(), 1200);
     },
     [router]
   );
