@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { books } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { requireApiUser } from '@/lib/auth/requireApiUser';
+import { checkAiLimit } from '@/lib/auth/rateLimit';
 
 export async function POST(
   _request: Request,
@@ -10,6 +11,14 @@ export async function POST(
 ) {
   const auth = await requireApiUser();
   if (auth.error) return auth.error;
+
+  const { allowed } = await checkAiLimit(auth.userId);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Daily AI limit reached. Try again tomorrow.' },
+      { status: 429 }
+    );
+  }
 
   const { id } = await params;
 

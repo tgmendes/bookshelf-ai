@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, real, date, timestamp, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, integer, real, date, timestamp, unique, boolean } from 'drizzle-orm/pg-core';
 
 // ── Auth tables ──
 
@@ -6,6 +6,8 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
   name: text('name'),
+  role: text('role').default('user').notNull(),
+  aiUnlimited: boolean('ai_unlimited').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -58,6 +60,15 @@ export const chatMessages = pgTable('chat_messages', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+export const aiUsage = pgTable('ai_usage', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  date: date('date').notNull(),
+  count: integer('count').notNull().default(0),
+}, (t) => [
+  unique('ai_usage_user_date_unique').on(t.userId, t.date),
+]);
+
 export const recommendations = pgTable('recommendations', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id),
@@ -67,4 +78,10 @@ export const recommendations = pgTable('recommendations', {
   coverUrl: text('cover_url'),
   synopsis: text('synopsis'),
   createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const siteConfig = pgTable('site_config', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });

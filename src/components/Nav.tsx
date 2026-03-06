@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookOpen, BarChart2, MessageCircle, Settings, Library, Menu, X, LogOut } from 'lucide-react';
+import { BookOpen, BarChart2, MessageCircle, Settings, Library, Menu, X, LogOut, Shield } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useState, useEffect } from 'react';
 
@@ -13,7 +13,7 @@ const links = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
-export function Nav() {
+export function Nav({ isAdmin }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -65,6 +65,19 @@ export function Nav() {
               </Link>
             );
           })}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors ${
+                pathname.startsWith('/admin')
+                  ? 'bg-primary-light text-primary font-medium'
+                  : 'text-muted hover:text-foreground hover:bg-primary-light'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              <span>Admin</span>
+            </Link>
+          )}
           <ThemeToggle />
           <button
             onClick={handleLogout}
@@ -108,6 +121,19 @@ export function Nav() {
               </Link>
             );
           })}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+                pathname.startsWith('/admin')
+                  ? 'bg-primary-light text-primary font-medium'
+                  : 'text-muted hover:text-foreground hover:bg-primary-light'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              <span>Admin</span>
+            </Link>
+          )}
           <button
             onClick={handleLogout}
             disabled={loggingOut}

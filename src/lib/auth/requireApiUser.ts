@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from './session';
 
 export async function requireApiUser(): Promise<
-  { userId: string; email: string; error?: never } | { error: NextResponse; userId?: never; email?: never }
+  { userId: string; email: string; role: string; error?: never } | { error: NextResponse; userId?: never; email?: never; role?: never }
 > {
   const session = await getSession();
   if (!session) {

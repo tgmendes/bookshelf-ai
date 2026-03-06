@@ -5,6 +5,7 @@ import { buildSystemPrompt } from '@/lib/buildSystemPrompt';
 import { desc, eq } from 'drizzle-orm';
 import type { Book } from '@/lib/types';
 import { requireApiUser } from '@/lib/auth/requireApiUser';
+import { checkAiLimit } from '@/lib/auth/rateLimit';
 
 interface IncomingMessage {
   role: 'user' | 'assistant';
@@ -14,6 +15,14 @@ interface IncomingMessage {
 export async function POST(req: NextRequest) {
   const auth = await requireApiUser();
   if (auth.error) return auth.error;
+
+  const { allowed } = await checkAiLimit(auth.userId);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Daily AI limit reached. Try again tomorrow.' },
+      { status: 429 }
+    );
+  }
 
   try {
     const { messages }: { messages: IncomingMessage[] } = await req.json();
