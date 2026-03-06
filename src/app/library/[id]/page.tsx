@@ -8,6 +8,7 @@ import { getCoverGradient } from '@/lib/coverGradients';
 import { FetchSingleCoverButton } from '@/components/FetchSingleCoverButton';
 import { SimilarBooks } from '@/components/SimilarBooks';
 import type { Shelf } from '@/lib/types';
+import { requireUser } from '@/lib/auth/requireUser';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export default async function BookDetailPage({ params, searchParams }: Props) {
+  const { userId } = await requireUser();
   const { id } = await params;
   const { rec } = await searchParams;
 
@@ -45,7 +47,11 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
 
   // Try books table first, unless rec query param is set
   if (rec !== '1') {
-    const rows = await db.select().from(books).where(eq(books.id, id)).limit(1);
+    const rows = await db
+      .select()
+      .from(books)
+      .where(and(eq(books.id, id), eq(books.userId, userId)))
+      .limit(1);
     if (rows[0]) {
       const r = rows[0];
       book = {
@@ -67,7 +73,11 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
 
   // Fallback to recommendations table
   if (!book) {
-    const recs = await db.select().from(recommendations).where(eq(recommendations.id, id)).limit(1);
+    const recs = await db
+      .select()
+      .from(recommendations)
+      .where(and(eq(recommendations.id, id), eq(recommendations.userId, userId)))
+      .limit(1);
     if (recs[0]) {
       const r = recs[0];
       book = {
@@ -101,7 +111,7 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
     const others = await db
       .select({ id: books.id, title: books.title, coverUrl: books.coverUrl })
       .from(books)
-      .where(and(eq(books.author, book.author), ne(books.id, book.id)))
+      .where(and(eq(books.author, book.author), ne(books.id, book.id), eq(books.userId, userId)))
       .limit(6);
     otherBooks = others;
   }

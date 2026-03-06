@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { books, chatMessages } from '@/lib/db/schema';
 import { buildSystemPrompt } from '@/lib/buildSystemPrompt';
-import { desc } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import type { Book } from '@/lib/types';
+import { requireApiUser } from '@/lib/auth/requireApiUser';
 
 interface IncomingMessage {
   role: 'user' | 'assistant';
@@ -11,6 +12,9 @@ interface IncomingMessage {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   try {
     const { messages }: { messages: IncomingMessage[] } = await req.json();
 
@@ -24,7 +28,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Build system prompt from user's library
-    const libraryRows = await db.select().from(books).orderBy(desc(books.dateAdded));
+    const libraryRows = await db
+      .select()
+      .from(books)
+      .where(eq(books.userId, auth.userId))
+      .orderBy(desc(books.dateAdded));
     const library = libraryRows.map((r) => ({
       ...r,
       myRating: r.myRating ?? 0,
@@ -36,6 +44,7 @@ export async function POST(req: NextRequest) {
     const lastUserMsg = messages[messages.length - 1];
     if (lastUserMsg.role === 'user') {
       await db.insert(chatMessages).values({
+        userId: auth.userId,
         role: 'user',
         content: lastUserMsg.content,
       });
@@ -100,6 +109,7 @@ export async function POST(req: NextRequest) {
           // Save assistant response after streaming completes
           if (fullContent) {
             await db.insert(chatMessages).values({
+              userId: auth.userId,
               role: 'assistant',
               content: fullContent,
             }).catch(console.error);

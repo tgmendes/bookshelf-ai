@@ -15,6 +15,7 @@ export function SimilarBooks({ bookId }: { bookId: string }) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [scrollIndex, setScrollIndex] = useState(0);
   const [savingIdx, setSavingIdx] = useState<number | null>(null);
+  const [savedIdxs, setSavedIdxs] = useState<Set<number>>(new Set());
 
   const handleFetch = async () => {
     setStatus('loading');
@@ -49,6 +50,7 @@ export function SimilarBooks({ bookId }: { bookId: string }) {
           synopsis: bookData.synopsis ?? null,
         }),
       });
+      setSavedIdxs((prev) => new Set(prev).add(idx));
     } catch {}
     setSavingIdx(null);
   };
@@ -118,6 +120,7 @@ export function SimilarBooks({ bookId }: { bookId: string }) {
           {recs.map((rec, i) => {
             const gradient = getCoverGradient(rec.title);
             const isSaving = savingIdx === i;
+            const isSaved = savedIdxs.has(i);
             return (
               <div
                 key={`${rec.title}-${rec.author}`}
@@ -135,15 +138,15 @@ export function SimilarBooks({ bookId }: { bookId: string }) {
                   <p className="text-muted text-xs mt-2 leading-relaxed line-clamp-2">{rec.reason}</p>
                   <button
                     onClick={() => handleSave(rec, i)}
-                    disabled={isSaving}
+                    disabled={isSaving || isSaved}
                     className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary-light text-primary hover:opacity-80 disabled:opacity-60 transition-colors cursor-pointer"
                   >
                     {isSaving ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
+                    ) : isSaved ? null : (
                       <Plus className="w-3 h-3" />
                     )}
-                    {isSaving ? 'Saving…' : 'Save to Next Read'}
+                    {isSaving ? 'Saving…' : isSaved ? 'Saved' : 'Save to Next Read'}
                   </button>
                 </div>
               </div>

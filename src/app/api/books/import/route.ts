@@ -3,8 +3,12 @@ import { db } from '@/lib/db';
 import { books } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
 import type { BookImportRow } from '@/lib/types';
+import { requireApiUser } from '@/lib/auth/requireApiUser';
 
 export async function POST(req: NextRequest) {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   try {
     const body: BookImportRow[] = await req.json();
 
@@ -16,6 +20,7 @@ export async function POST(req: NextRequest) {
       await db
         .insert(books)
         .values({
+          userId: auth.userId,
           goodreadsBookId: book.goodreadsBookId || null,
           isbn13: book.isbn13 || null,
           title: book.title,
@@ -30,7 +35,7 @@ export async function POST(req: NextRequest) {
           bookshelves: book.bookshelves,
         })
         .onConflictDoUpdate({
-          target: books.goodreadsBookId,
+          target: [books.goodreadsBookId, books.userId],
           set: {
             title: book.title,
             author: book.author,

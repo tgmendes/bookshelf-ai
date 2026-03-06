@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { BookOpen, BarChart2, MessageCircle, Settings, Library, Menu, X } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { BookOpen, BarChart2, MessageCircle, Settings, Library, Menu, X, LogOut } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useState, useEffect } from 'react';
 
@@ -15,11 +15,26 @@ const links = [
 
 export function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+
+  // Don't show nav on login page
+  if (pathname === '/login') return null;
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/login');
+    } catch {
+      setLoggingOut(false);
+    }
+  }
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-surface border-b border-border">
@@ -51,6 +66,14 @@ export function Nav() {
             );
           })}
           <ThemeToggle />
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-muted hover:text-foreground hover:bg-primary-light transition-colors disabled:opacity-50"
+            title="Sign out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Mobile hamburger */}
@@ -85,6 +108,14 @@ export function Nav() {
               </Link>
             );
           })}
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-muted hover:text-foreground hover:bg-primary-light transition-colors w-full disabled:opacity-50"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign out</span>
+          </button>
         </div>
       )}
     </nav>

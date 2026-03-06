@@ -1,17 +1,21 @@
 import { db } from '@/lib/db';
 import { chatMessages } from '@/lib/db/schema';
 import { ChatInterface } from '@/components/ChatInterface';
-import { asc } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import type { ChatMessage } from '@/lib/types';
+import { requireUser } from '@/lib/auth/requireUser';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ChatPage() {
+  const { userId } = await requireUser();
+
   let history: ChatMessage[] = [];
   try {
     const rows = await db
       .select()
       .from(chatMessages)
+      .where(eq(chatMessages.userId, userId))
       .orderBy(asc(chatMessages.createdAt))
       .limit(100);
 

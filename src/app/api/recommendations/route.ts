@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { recommendations } from '@/lib/db/schema';
-import { desc } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
+import { requireApiUser } from '@/lib/auth/requireApiUser';
 
 export async function GET() {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   try {
     const rows = await db
       .select()
       .from(recommendations)
+      .where(eq(recommendations.userId, auth.userId))
       .orderBy(desc(recommendations.createdAt));
     return NextResponse.json(rows);
   } catch (err) {
@@ -17,6 +22,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   try {
     const body = await req.json();
     const { title, author, reason, coverUrl, synopsis } = body;
@@ -28,6 +36,7 @@ export async function POST(req: NextRequest) {
     const [inserted] = await db
       .insert(recommendations)
       .values({
+        userId: auth.userId,
         title,
         author,
         reason: reason ?? '',

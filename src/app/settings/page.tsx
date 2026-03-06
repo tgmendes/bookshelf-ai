@@ -1,8 +1,13 @@
 import { ImportZone } from '@/components/ImportZone';
 import { FetchCoversButton } from '@/components/FetchCoversButton';
 import { Settings, Image } from 'lucide-react';
+import { requireUser } from '@/lib/auth/requireUser';
 
-export default function SettingsPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function SettingsPage() {
+  await requireUser();
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="font-display text-4xl text-foreground mb-2">Settings</h1>

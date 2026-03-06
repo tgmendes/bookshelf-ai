@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { books } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
+import { requireApiUser } from '@/lib/auth/requireApiUser';
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   const { id } = await params;
 
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -14,14 +18,21 @@ export async function POST(
     return NextResponse.json({ error: 'OPENROUTER_API_KEY not set' }, { status: 500 });
   }
 
-  const rows = await db.select().from(books).where(eq(books.id, id)).limit(1);
+  const rows = await db
+    .select()
+    .from(books)
+    .where(and(eq(books.id, id), eq(books.userId, auth.userId)))
+    .limit(1);
   const book = rows[0];
   if (!book) {
     return NextResponse.json({ error: 'Book not found' }, { status: 404 });
   }
 
   // Get all titles in the user's library to exclude
-  const allBooks = await db.select({ title: books.title, author: books.author }).from(books);
+  const allBooks = await db
+    .select({ title: books.title, author: books.author })
+    .from(books)
+    .where(eq(books.userId, auth.userId));
   const excludeList = allBooks.map((b) => `"${b.title}" by ${b.author}`).join('\n');
 
   const prompt = `Given the book "${book.title}" by ${book.author}, recommend exactly 5 similar books that a fan would enjoy. For each book, provide:

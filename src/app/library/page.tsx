@@ -5,6 +5,7 @@ import { LibraryFilters } from '@/components/LibraryFilters';
 import { Suspense } from 'react';
 import { asc, desc, ilike, eq, or, and } from 'drizzle-orm';
 import type { Book, Shelf } from '@/lib/types';
+import { requireUser } from '@/lib/auth/requireUser';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,12 +15,13 @@ interface SearchParams {
   search?: string;
 }
 
-async function getBooks(params: SearchParams): Promise<Book[]> {
+async function getBooks(params: SearchParams, userId: string): Promise<Book[]> {
   // Next Read shelf — query recommendations table
   if (params.shelf === 'next-read') {
     const recs = await db
       .select()
       .from(recommendations)
+      .where(eq(recommendations.userId, userId))
       .orderBy(desc(recommendations.createdAt));
 
     return recs
@@ -61,7 +63,7 @@ async function getBooks(params: SearchParams): Promise<Book[]> {
 
   let query = db.select().from(books).$dynamic();
 
-  const conditions = [];
+  const conditions = [eq(books.userId, userId)];
   if (params.shelf && ['read', 'currently-reading', 'to-read'].includes(params.shelf)) {
     conditions.push(eq(books.shelf, params.shelf));
   }
@@ -75,9 +77,7 @@ async function getBooks(params: SearchParams): Promise<Book[]> {
     );
   }
 
-  if (conditions.length > 0) {
-    query = query.where(conditions.length === 1 ? conditions[0] : and(...conditions));
-  }
+  query = query.where(and(...conditions));
 
   query = isDescSort ? query.orderBy(desc(sortCol)) : query.orderBy(asc(sortCol));
 
@@ -92,8 +92,8 @@ async function getBooks(params: SearchParams): Promise<Book[]> {
   }));
 }
 
-async function LibraryGrid({ searchParams }: { searchParams: SearchParams }) {
-  const allBooks = await getBooks(searchParams);
+async function LibraryGrid({ searchParams, userId }: { searchParams: SearchParams; userId: string }) {
+  const allBooks = await getBooks(searchParams, userId);
   const isNextRead = searchParams.shelf === 'next-read';
 
   return (
@@ -124,6 +124,7 @@ export default async function LibraryPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  const { userId } = await requireUser();
   const params = await searchParams;
 
   return (
@@ -134,7 +135,7 @@ export default async function LibraryPage({
         <LibraryFilters />
       </Suspense>
       <Suspense fallback={<div className="text-muted py-8 text-center">Loading…</div>}>
-        <LibraryGrid searchParams={params} />
+        <LibraryGrid searchParams={params} userId={userId} />
       </Suspense>
     </div>
   );

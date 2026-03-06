@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { books } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
+import { requireApiUser } from '@/lib/auth/requireApiUser';
 
 function cleanTitle(title: string): string {
   return title.replace(/\s*\(.*\)\s*$/, '').trim();
@@ -110,9 +111,16 @@ export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   const { id } = await params;
 
-  const rows = await db.select().from(books).where(eq(books.id, id)).limit(1);
+  const rows = await db
+    .select()
+    .from(books)
+    .where(and(eq(books.id, id), eq(books.userId, auth.userId)))
+    .limit(1);
   const book = rows[0];
   if (!book) {
     return NextResponse.json({ error: 'Book not found' }, { status: 404 });

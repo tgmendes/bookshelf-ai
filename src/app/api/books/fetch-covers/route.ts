@@ -1,20 +1,24 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { books } from '@/lib/db/schema';
-import { isNull, eq, count } from 'drizzle-orm';
+import { isNull, eq, count, and } from 'drizzle-orm';
 import { fetchBookData } from '@/lib/fetchBookData';
+import { requireApiUser } from '@/lib/auth/requireApiUser';
 
-async function getRemainingCount(): Promise<number> {
+async function getRemainingCount(userId: string): Promise<number> {
   const [row] = await db
     .select({ count: count() })
     .from(books)
-    .where(isNull(books.coverUrl));
+    .where(and(eq(books.userId, userId), isNull(books.coverUrl)));
   return row?.count ?? 0;
 }
 
 export async function GET() {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   try {
-    const remaining = await getRemainingCount();
+    const remaining = await getRemainingCount(auth.userId);
     return NextResponse.json({ remaining });
   } catch (err) {
     console.error('GET /api/books/fetch-covers error:', err);
@@ -23,11 +27,14 @@ export async function GET() {
 }
 
 export async function POST() {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   try {
     const booksWithoutCovers = await db
       .select({ id: books.id, title: books.title, author: books.author })
       .from(books)
-      .where(isNull(books.coverUrl))
+      .where(and(eq(books.userId, auth.userId), isNull(books.coverUrl)))
       .limit(10);
 
     let fetched = 0;
@@ -43,7 +50,7 @@ export async function POST() {
       }
     }
 
-    const remaining = await getRemainingCount();
+    const remaining = await getRemainingCount(auth.userId);
     return NextResponse.json({ fetched, remaining });
   } catch (err) {
     console.error('POST /api/books/fetch-covers error:', err);

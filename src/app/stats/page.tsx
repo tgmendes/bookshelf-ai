@@ -2,12 +2,14 @@ import { db } from '@/lib/db';
 import { books } from '@/lib/db/schema';
 import { StatsCharts } from '@/components/StatsCharts';
 import { BookOpen, Star, FileText, BookMarked } from 'lucide-react';
+import { eq } from 'drizzle-orm';
 import type { Shelf } from '@/lib/types';
+import { requireUser } from '@/lib/auth/requireUser';
 
 export const dynamic = 'force-dynamic';
 
-async function getStats() {
-  const rows = await db.select().from(books);
+async function getStats(userId: string) {
+  const rows = await db.select().from(books).where(eq(books.userId, userId));
   const all = rows.map((r) => ({ ...r, myRating: r.myRating ?? 0, pages: r.pages ?? 0, shelf: r.shelf as Shelf }));
 
   const readBooks = all.filter((b) => b.shelf === 'read');
@@ -51,7 +53,8 @@ async function getStats() {
 }
 
 export default async function StatsPage() {
-  const stats = await getStats();
+  const { userId } = await requireUser();
+  const stats = await getStats(userId);
 
   const statCards = [
     { label: 'Books Read', value: stats.totalBooks.toLocaleString(), icon: BookOpen },

@@ -1,8 +1,36 @@
-import { pgTable, uuid, text, integer, real, date, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, integer, real, date, timestamp, unique } from 'drizzle-orm/pg-core';
+
+// ── Auth tables ──
+
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: text('email').notNull().unique(),
+  name: text('name'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const sessions = pgTable('sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const magicLinks = pgTable('magic_links', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: text('email').notNull(),
+  token: text('token').notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  usedAt: timestamp('used_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// ── Data tables ──
 
 export const books = pgTable('books', {
   id: uuid('id').primaryKey().defaultRandom(),
-  goodreadsBookId: text('goodreads_book_id').unique(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  goodreadsBookId: text('goodreads_book_id'),
   isbn13: text('isbn13'),
   title: text('title').notNull(),
   author: text('author').notNull(),
@@ -18,10 +46,13 @@ export const books = pgTable('books', {
   synopsis: text('synopsis'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (t) => [
+  unique('books_goodreads_user_unique').on(t.goodreadsBookId, t.userId),
+]);
 
 export const chatMessages = pgTable('chat_messages', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
   role: text('role').notNull(),
   content: text('content').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
@@ -29,6 +60,7 @@ export const chatMessages = pgTable('chat_messages', {
 
 export const recommendations = pgTable('recommendations', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
   title: text('title').notNull(),
   author: text('author').notNull(),
   reason: text('reason').notNull(),
