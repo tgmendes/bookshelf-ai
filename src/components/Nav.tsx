@@ -37,7 +37,7 @@ export function Nav({ isAdmin }: { isAdmin?: boolean }) {
   }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-surface border-b border-border">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-lg border-b border-border">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 text-foreground font-semibold tracking-tight">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">

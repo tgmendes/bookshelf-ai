@@ -124,8 +124,10 @@ async function LibraryGrid({ searchParams, userId, hasBooks }: { searchParams: S
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {allBooks.map((book) => (
-            <BookCard key={book.id} book={book} />
+          {allBooks.map((book, i) => (
+            <div key={book.id} className="animate-fade-in-up" style={{ animationDelay: `${(i % 10) * 60}ms` }}>
+              <BookCard book={book} />
+            </div>
           ))}
         </div>
       )}
@@ -155,7 +157,7 @@ export default async function LibraryPage({
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="font-display text-4xl text-foreground mb-2">My Library</h1>
+      <h1 className="font-display text-4xl text-foreground mb-2 animate-fade-in">My Library</h1>
       {hasBooks && <p className="text-muted mb-6">Browse and manage your book collection</p>}
       {hasBooks && (
         <Suspense fallback={<div />}>

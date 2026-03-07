@@ -74,8 +74,8 @@ export function ChatInterface({ initialMessages }: ChatInterfaceProps) {
       <div className="bg-surface rounded-2xl border border-border flex-1 overflow-hidden flex flex-col min-h-0">
         <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center gap-6 text-center py-8">
-              <div className="w-14 h-14 bg-primary-light rounded-2xl flex items-center justify-center">
+            <div className="h-full flex flex-col items-center justify-center gap-6 text-center py-8 animate-fade-in">
+              <div className="w-14 h-14 bg-primary-light rounded-2xl flex items-center justify-center animate-scale-in">
                 <Sparkles className="w-7 h-7 text-primary" />
               </div>
               <div>

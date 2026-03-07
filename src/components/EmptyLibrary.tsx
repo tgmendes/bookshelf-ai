@@ -5,16 +5,16 @@ import { ImportZone } from './ImportZone';
 
 export function EmptyLibrary() {
   return (
-    <div className="max-w-2xl mx-auto py-12">
+    <div className="max-w-2xl mx-auto py-12 animate-fade-in-up">
       <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-primary-light rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <BookOpen className="w-8 h-8 text-primary" />
+        <div className="w-20 h-20 bg-primary-light rounded-3xl flex items-center justify-center mx-auto mb-5 animate-scale-in">
+          <BookOpen className="w-10 h-10 text-primary" />
         </div>
-        <h2 className="font-display text-2xl text-foreground mb-2">
+        <h2 className="font-display text-3xl text-foreground mb-2">
           Welcome to your bookshelf!
         </h2>
-        <p className="text-muted">
-          Import your Goodreads library to get started.
+        <p className="text-muted text-lg">
+          Your reading journey starts here. Import your Goodreads library to explore your collection.
         </p>
       </div>
 

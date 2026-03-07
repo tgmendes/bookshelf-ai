@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
 import { books } from '@/lib/db/schema';
 import { StatsCharts } from '@/components/StatsCharts';
-import { BookOpen, Star, FileText, BookMarked } from 'lucide-react';
+import { BookOpen, Star, FileText, BookMarked, BarChart2 } from 'lucide-react';
 import { eq } from 'drizzle-orm';
 import type { Shelf } from '@/lib/types';
 import { requireUser } from '@/lib/auth/requireUser';
@@ -65,18 +65,22 @@ export default async function StatsPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="font-display text-4xl text-foreground mb-2">Reading Stats</h1>
-      <p className="text-muted mb-8">Your reading journey at a glance</p>
+      <h1 className="font-display text-4xl text-foreground mb-2 animate-fade-in">Reading Stats</h1>
+      <p className="text-muted mb-8 animate-fade-in stagger-1">Your reading journey at a glance</p>
 
       {stats.totalBooks === 0 ? (
-        <div className="text-center py-20 text-muted">
-          <p>No reading data yet. Import your Goodreads library to see stats.</p>
+        <div className="text-center py-20 text-muted animate-fade-in-up">
+          <div className="w-16 h-16 bg-primary-light rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <BarChart2 className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="font-display text-2xl text-foreground mb-2">No reading data yet</h2>
+          <p>Import your Goodreads library to see your reading stats come to life.</p>
         </div>
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {statCards.map(({ label, value, icon: Icon }) => (
-              <div key={label} className="bg-surface rounded-2xl border border-border p-5">
+            {statCards.map(({ label, value, icon: Icon }, i) => (
+              <div key={label} className="bg-surface rounded-2xl border border-border p-5 animate-fade-in-up" style={{ animationDelay: `${i * 60}ms` }}>
                 <div className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center mb-5">
                   <Icon className="w-5 h-5 text-primary" />
                 </div>
@@ -86,11 +90,13 @@ export default async function StatsPage() {
             ))}
           </div>
 
-          <StatsCharts
-            booksByYear={stats.booksByYear}
-            ratingDist={stats.ratingDist}
-            topAuthors={stats.topAuthors}
-          />
+          <div className="animate-fade-in-up stagger-5">
+            <StatsCharts
+              booksByYear={stats.booksByYear}
+              ratingDist={stats.ratingDist}
+              topAuthors={stats.topAuthors}
+            />
+          </div>
         </>
       )}
     </div>

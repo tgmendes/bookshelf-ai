@@ -128,10 +128,23 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="max-w-5xl mx-auto px-4 py-8 relative">
+      {/* Blurred cover backdrop */}
+      {book.coverUrl && (
+        <div className="absolute top-0 left-0 right-0 h-80 overflow-hidden -z-10 pointer-events-none">
+          <img
+            src={book.coverUrl}
+            alt=""
+            aria-hidden="true"
+            className="w-full h-full object-cover blur-3xl opacity-15 scale-110"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background" />
+        </div>
+      )}
+
       <Link
         href={book.isRecommendation ? '/library?shelf=next-read' : '/library'}
-        className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors mb-8"
+        className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors mb-8 animate-fade-in"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Library
@@ -139,7 +152,7 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
 
       <div className="flex flex-col md:flex-row gap-8 md:gap-12">
         {/* Cover */}
-        <div className="flex-shrink-0 mx-auto md:mx-0">
+        <div className="flex-shrink-0 mx-auto md:mx-0 animate-fade-in-up">
           <div
             className={`relative w-56 rounded-2xl bg-gradient-to-br ${gradient} overflow-hidden shadow-lg`}
             style={{ aspectRatio: '3/4' }}
@@ -160,7 +173,7 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
         </div>
 
         {/* Details */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 animate-fade-in-up stagger-2">
           <h1 className="font-display text-3xl md:text-4xl text-foreground leading-snug mb-1">
             {book.title}
           </h1>
@@ -256,13 +269,13 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
       </div>
 
       {/* AI Similar Books */}
-      <div className="mt-12">
+      <div className="mt-12 animate-fade-in-up stagger-4">
         <SimilarBooks bookId={book.id} />
       </div>
 
       {/* Other books by same author */}
       {otherBooks.length > 0 && (
-        <div className="mt-12">
+        <div className="mt-12 animate-fade-in-up stagger-5">
           <h2 className="font-display text-2xl text-foreground mb-4">
             More by {book.author}
           </h2>
