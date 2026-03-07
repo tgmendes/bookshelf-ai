@@ -49,7 +49,7 @@ export function DiscoverInterface() {
       }
 
       const data = await res.json();
-      const books: RecommendedBook[] = data.books ?? [];
+      const books: RecommendedBook[] = data.recommendations ?? [];
       setResults(books);
 
       // Fetch covers in parallel
