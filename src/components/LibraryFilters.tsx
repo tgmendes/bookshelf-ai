@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { useCallback } from 'react';
+import type { Label } from '@/lib/types';
 
 const sorts = [
   { value: 'dateAdded', label: 'Date added' },
@@ -20,7 +21,7 @@ const shelves = [
   { value: 'next-read', label: 'Next Read' },
 ];
 
-export function LibraryFilters() {
+export function LibraryFilters({ labels = [] }: { labels?: Label[] }) {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -38,6 +39,7 @@ export function LibraryFilters() {
   );
 
   const currentShelf = params.get('shelf') ?? '';
+  const currentLabel = params.get('label') ?? '';
 
   return (
     <div className="space-y-4 mb-6">
@@ -57,6 +59,30 @@ export function LibraryFilters() {
           </button>
         ))}
       </div>
+
+      {/* Label filter pills */}
+      {labels.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted mr-1">Labels:</span>
+          {labels.map((label) => {
+            const isActive = currentLabel === label.id;
+            return (
+              <button
+                key={label.id}
+                onClick={() => update('label', isActive ? '' : label.id)}
+                className="px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer border"
+                style={
+                  isActive
+                    ? { backgroundColor: label.color, color: '#fff', borderColor: label.color }
+                    : { borderColor: label.color, color: label.color }
+                }
+              >
+                {label.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Search + sort row */}
       <div className="flex flex-wrap items-center gap-3">

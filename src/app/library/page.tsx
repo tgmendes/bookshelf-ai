@@ -1,11 +1,11 @@
 import { db } from '@/lib/db';
-import { books, recommendations } from '@/lib/db/schema';
+import { books, recommendations, bookLabels, labels } from '@/lib/db/schema';
 import { BookCard } from '@/components/BookCard';
 import { LibraryFilters } from '@/components/LibraryFilters';
 import { EmptyLibrary } from '@/components/EmptyLibrary';
 import { Suspense } from 'react';
-import { asc, desc, ilike, eq, or, and, count } from 'drizzle-orm';
-import type { Book, Shelf } from '@/lib/types';
+import { asc, desc, ilike, eq, or, and, count, inArray } from 'drizzle-orm';
+import type { Book, Shelf, Label } from '@/lib/types';
 import { requireUser } from '@/lib/auth/requireUser';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,7 @@ interface SearchParams {
   shelf?: string;
   sort?: string;
   search?: string;
+  label?: string;
 }
 
 async function getBooks(params: SearchParams, userId: string): Promise<Book[]> {
@@ -78,6 +79,14 @@ async function getBooks(params: SearchParams, userId: string): Promise<Book[]> {
     );
   }
 
+  if (params.label) {
+    const labelBookIds = db
+      .select({ bookId: bookLabels.bookId })
+      .from(bookLabels)
+      .where(eq(bookLabels.labelId, params.label));
+    conditions.push(inArray(books.id, labelBookIds));
+  }
+
   query = query.where(and(...conditions));
 
   query = isDescSort ? query.orderBy(desc(sortCol)) : query.orderBy(asc(sortCol));
@@ -138,13 +147,19 @@ export default async function LibraryPage({
     .where(eq(books.userId, userId));
   const hasBooks = total > 0;
 
+  const userLabels: Label[] = await db
+    .select({ id: labels.id, name: labels.name, color: labels.color })
+    .from(labels)
+    .where(eq(labels.userId, userId))
+    .orderBy(asc(labels.name));
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="font-display text-4xl text-foreground mb-2">My Library</h1>
       {hasBooks && <p className="text-muted mb-6">Browse and manage your book collection</p>}
       {hasBooks && (
         <Suspense fallback={<div />}>
-          <LibraryFilters />
+          <LibraryFilters labels={userLabels} />
         </Suspense>
       )}
       <Suspense fallback={<div className="text-muted py-8 text-center">Loading…</div>}>

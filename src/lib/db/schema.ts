@@ -80,6 +80,25 @@ export const recommendations = pgTable('recommendations', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+export const labels = pgTable('labels', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  name: text('name').notNull(),
+  color: text('color').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => [
+  unique('labels_user_name_unique').on(t.userId, t.name),
+]);
+
+export const bookLabels = pgTable('book_labels', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  bookId: uuid('book_id').notNull().references(() => books.id, { onDelete: 'cascade' }),
+  labelId: uuid('label_id').notNull().references(() => labels.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => [
+  unique('book_labels_book_label_unique').on(t.bookId, t.labelId),
+]);
+
 export const siteConfig = pgTable('site_config', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),

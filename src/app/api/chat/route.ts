@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { books, chatMessages } from '@/lib/db/schema';
+import { books, chatMessages, bookLabels, labels } from '@/lib/db/schema';
 import { buildSystemPrompt } from '@/lib/buildSystemPrompt';
 import { desc, eq } from 'drizzle-orm';
 import type { Book } from '@/lib/types';
@@ -47,7 +47,21 @@ export async function POST(req: NextRequest) {
       myRating: r.myRating ?? 0,
       pages: r.pages ?? 0,
     })) as Book[];
-    const systemPrompt = buildSystemPrompt(library);
+
+    // Fetch labels for user's books
+    const labelRows = await db
+      .select({ bookId: bookLabels.bookId, labelName: labels.name })
+      .from(bookLabels)
+      .innerJoin(labels, eq(bookLabels.labelId, labels.id))
+      .where(eq(labels.userId, auth.userId));
+
+    const labelsByBookId: Record<string, string[]> = {};
+    for (const row of labelRows) {
+      if (!labelsByBookId[row.bookId]) labelsByBookId[row.bookId] = [];
+      labelsByBookId[row.bookId].push(row.labelName);
+    }
+
+    const systemPrompt = buildSystemPrompt(library, labelsByBookId);
 
     // Save user message
     const lastUserMsg = messages[messages.length - 1];

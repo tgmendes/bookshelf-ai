@@ -27,6 +27,12 @@ export interface ChatMessage {
   suggestedBooks?: Array<{ title: string; author: string }>;
 }
 
+export interface Label {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface BookImportRow {
   goodreadsBookId: string;
   isbn13: string | null;

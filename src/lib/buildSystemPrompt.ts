@@ -1,6 +1,6 @@
 import type { Book } from './types';
 
-export function buildSystemPrompt(books: Book[]): string {
+export function buildSystemPrompt(books: Book[], labelsByBookId?: Record<string, string[]>): string {
   const readBooks = books.filter((b) => b.shelf === 'read');
   const currentlyReading = books.filter((b) => b.shelf === 'currently-reading');
   const toRead = books.filter((b) => b.shelf === 'to-read');
@@ -27,22 +27,32 @@ export function buildSystemPrompt(books: Book[]): string {
     .map(([author, count]) => `${author} (${count} books)`)
     .join(', ');
 
+  const formatLabels = (bookId: string) => {
+    const bookLabels = labelsByBookId?.[bookId];
+    return bookLabels?.length ? ` [labels: ${bookLabels.join(', ')}]` : '';
+  };
+
   const readList = readBooks
     .slice(0, 100)
     .map(
       (b) =>
-        `- "${b.title}" by ${b.author}${b.myRating > 0 ? ` (rated ${b.myRating}/5)` : ''}`
+        `- "${b.title}" by ${b.author}${b.myRating > 0 ? ` (rated ${b.myRating}/5)` : ''}${formatLabels(b.id)}`
     )
     .join('\n');
 
   const currentList = currentlyReading
-    .map((b) => `- "${b.title}" by ${b.author}`)
+    .map((b) => `- "${b.title}" by ${b.author}${formatLabels(b.id)}`)
     .join('\n');
 
   const wishList = toRead
     .slice(0, 50)
-    .map((b) => `- "${b.title}" by ${b.author}`)
+    .map((b) => `- "${b.title}" by ${b.author}${formatLabels(b.id)}`)
     .join('\n');
+
+  // Collect all unique label names
+  const allLabelNames = labelsByBookId
+    ? [...new Set(Object.values(labelsByBookId).flat())].sort()
+    : [];
 
   return `You are a personal book advisor with deep knowledge of the user's reading history.
 
@@ -63,7 +73,7 @@ ${readList || 'None yet'}
 
 ${currentlyReading.length > 0 ? `## Currently reading\n${currentList}\n` : ''}
 ${toRead.length > 0 ? `## Want to read\n${wishList}\n` : ''}
-
+${allLabelNames.length > 0 ? `## User's labels\nThe user has organized books with these labels: ${allLabelNames.join(', ')}. Labels appear in [labels: ...] next to each book above.\n` : ''}
 ## Your role
 - Give personalised book recommendations based on the user's taste
 - Answer questions about their reading history accurately

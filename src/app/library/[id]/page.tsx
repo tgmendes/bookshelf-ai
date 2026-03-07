@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { books, recommendations } from '@/lib/db/schema';
+import { books, recommendations, bookLabels, labels } from '@/lib/db/schema';
 import { eq, and, ne } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -7,7 +7,8 @@ import { ArrowLeft, BookOpen, Star } from 'lucide-react';
 import { getCoverGradient } from '@/lib/coverGradients';
 import { FetchSingleCoverButton } from '@/components/FetchSingleCoverButton';
 import { SimilarBooks } from '@/components/SimilarBooks';
-import type { Shelf } from '@/lib/types';
+import { BookLabels } from '@/components/BookLabels';
+import type { Shelf, Label } from '@/lib/types';
 import { requireUser } from '@/lib/auth/requireUser';
 
 export const dynamic = 'force-dynamic';
@@ -114,6 +115,16 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
       .where(and(eq(books.author, book.author), ne(books.id, book.id), eq(books.userId, userId)))
       .limit(6);
     otherBooks = others;
+  }
+
+  // Get book's labels
+  let bookLabelList: Label[] = [];
+  if (!book.isRecommendation) {
+    bookLabelList = await db
+      .select({ id: labels.id, name: labels.name, color: labels.color })
+      .from(bookLabels)
+      .innerJoin(labels, eq(bookLabels.labelId, labels.id))
+      .where(eq(bookLabels.bookId, id));
   }
 
   return (
@@ -232,6 +243,13 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Labels */}
+          {!book.isRecommendation && (
+            <div className="mb-6">
+              <BookLabels bookId={book.id} initialLabels={bookLabelList} />
             </div>
           )}
         </div>
