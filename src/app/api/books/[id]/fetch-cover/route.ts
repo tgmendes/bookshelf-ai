@@ -3,10 +3,7 @@ import { db } from '@/lib/db';
 import { books } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { requireApiUser } from '@/lib/auth/requireApiUser';
-
-function cleanTitle(title: string): string {
-  return title.replace(/\s*\(.*\)\s*$/, '').trim();
-}
+import { cleanTitle, parseOpenLibraryDesc } from '@/lib/fetchOpenLibrary';
 
 async function fetchByIsbn(isbn: string) {
   // Direct cover URL — no search needed
@@ -32,12 +29,7 @@ async function fetchByIsbn(isbn: string) {
         const workRes = await fetch(`https://openlibrary.org${data.works[0].key}.json`, { cache: 'no-store' });
         if (workRes.ok) {
           const workData = await workRes.json();
-          const desc = workData.description;
-          if (typeof desc === 'string') {
-            synopsis = desc.length > 500 ? desc.slice(0, 500) : desc;
-          } else if (desc?.value) {
-            synopsis = desc.value.length > 500 ? desc.value.slice(0, 500) : desc.value;
-          }
+          synopsis = parseOpenLibraryDesc(workData.description);
         }
       }
     }
@@ -67,12 +59,7 @@ async function fetchBySearch(rawTitle: string, author: string) {
             const workRes = await fetch(`https://openlibrary.org${doc.key}.json`, { cache: 'no-store' });
             if (workRes.ok) {
               const workData = await workRes.json();
-              const desc = workData.description;
-              if (typeof desc === 'string') {
-                synopsis = desc.length > 500 ? desc.slice(0, 500) : desc;
-              } else if (desc?.value) {
-                synopsis = desc.value.length > 500 ? desc.value.slice(0, 500) : desc.value;
-              }
+              synopsis = parseOpenLibraryDesc(workData.description);
             }
           } catch {}
         }

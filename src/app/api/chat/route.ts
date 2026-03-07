@@ -1,19 +1,14 @@
 import { NextResponse } from 'next/server';
 import { convertToModelMessages, streamText, type UIMessage } from 'ai';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { db } from '@/lib/db';
-import { books, chatMessages, bookLabels, labels } from '@/lib/db/schema';
+import { chatMessages } from '@/lib/db/schema';
 import { buildSystemPrompt } from '@/lib/buildSystemPrompt';
-import { desc, eq } from 'drizzle-orm';
-import type { Book } from '@/lib/types';
 import { requireApiUser } from '@/lib/auth/requireApiUser';
 import { checkAiLimit } from '@/lib/auth/rateLimit';
+import { openrouter } from '@/lib/openrouter';
+import { fetchUserLibraryWithLabels } from '@/lib/fetchUserLibrary';
 
 export const maxDuration = 30;
-
-const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY!,
-});
 
 export async function POST(req: Request) {
   const auth = await requireApiUser();
@@ -38,31 +33,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'OPENROUTER_API_KEY not set' }, { status: 500 });
     }
 
-    // Build system prompt from user's library
-    const libraryRows = await db
-      .select()
-      .from(books)
-      .where(eq(books.userId, auth.userId))
-      .orderBy(desc(books.dateAdded));
-    const library = libraryRows.map((r) => ({
-      ...r,
-      myRating: r.myRating ?? 0,
-      pages: r.pages ?? 0,
-    })) as Book[];
-
-    // Fetch labels for user's books
-    const labelRows = await db
-      .select({ bookId: bookLabels.bookId, labelName: labels.name })
-      .from(bookLabels)
-      .innerJoin(labels, eq(bookLabels.labelId, labels.id))
-      .where(eq(labels.userId, auth.userId));
-
-    const labelsByBookId: Record<string, string[]> = {};
-    for (const row of labelRows) {
-      if (!labelsByBookId[row.bookId]) labelsByBookId[row.bookId] = [];
-      labelsByBookId[row.bookId].push(row.labelName);
-    }
-
+    const { library, labelsByBookId } = await fetchUserLibraryWithLabels(auth.userId);
     const systemPrompt = buildSystemPrompt(library, labelsByBookId);
 
     // Save user message

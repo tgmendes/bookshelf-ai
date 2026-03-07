@@ -1,5 +1,14 @@
-function cleanTitle(title: string): string {
+export function cleanTitle(title: string): string {
   return title.replace(/\s*\(.*\)\s*$/, '').trim();
+}
+
+export function parseOpenLibraryDesc(desc: unknown): string | null {
+  if (typeof desc === 'string') return desc.length > 500 ? desc.slice(0, 500) : desc;
+  if (desc && typeof desc === 'object' && 'value' in desc && typeof (desc as { value: string }).value === 'string') {
+    const v = (desc as { value: string }).value;
+    return v.length > 500 ? v.slice(0, 500) : v;
+  }
+  return null;
 }
 
 export async function fetchFromOpenLibrary(
@@ -34,12 +43,7 @@ export async function fetchFromOpenLibrary(
         });
         if (workRes.ok) {
           const workData = await workRes.json();
-          const desc = workData.description;
-          if (typeof desc === 'string') {
-            synopsis = desc.length > 500 ? desc.slice(0, 500) : desc;
-          } else if (desc?.value) {
-            synopsis = desc.value.length > 500 ? desc.value.slice(0, 500) : desc.value;
-          }
+          synopsis = parseOpenLibraryDesc(workData.description);
         }
       } catch {
         // ignore work fetch errors

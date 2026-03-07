@@ -37,18 +37,17 @@ export async function POST() {
       .where(and(eq(books.userId, auth.userId), isNull(books.coverUrl)))
       .limit(10);
 
-    let fetched = 0;
-
-    for (const book of booksWithoutCovers) {
-      const { coverUrl, synopsis } = await fetchBookData(book.title, book.author);
-      if (coverUrl || synopsis) {
-        await db
-          .update(books)
-          .set({ coverUrl, synopsis })
-          .where(eq(books.id, book.id));
-        fetched++;
-      }
-    }
+    const results = await Promise.all(
+      booksWithoutCovers.map(async (book) => {
+        const { coverUrl, synopsis } = await fetchBookData(book.title, book.author);
+        if (coverUrl || synopsis) {
+          await db.update(books).set({ coverUrl, synopsis }).where(eq(books.id, book.id));
+          return 1;
+        }
+        return 0;
+      })
+    );
+    const fetched = results.reduce<number>((sum, n) => sum + n, 0);
 
     const remaining = await getRemainingCount(auth.userId);
     return NextResponse.json({ fetched, remaining });

@@ -16,41 +16,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No books provided' }, { status: 400 });
     }
 
-    for (const book of body) {
-      await db
-        .insert(books)
-        .values({
-          userId: auth.userId,
-          goodreadsBookId: book.goodreadsBookId || null,
-          isbn13: book.isbn13 || null,
-          title: book.title,
-          author: book.author,
-          myRating: book.myRating,
-          avgRating: book.avgRating,
-          dateRead: book.dateRead,
-          dateAdded: book.dateAdded,
-          shelf: book.shelf,
-          pages: book.pages,
-          yearPublished: book.yearPublished,
-          bookshelves: book.bookshelves,
-        })
-        .onConflictDoUpdate({
-          target: [books.goodreadsBookId, books.userId],
-          set: {
+    await Promise.all(
+      body.map((book) =>
+        db
+          .insert(books)
+          .values({
+            userId: auth.userId,
+            goodreadsBookId: book.goodreadsBookId || null,
+            isbn13: book.isbn13 || null,
             title: book.title,
             author: book.author,
-            isbn13: book.isbn13 || null,
             myRating: book.myRating,
             avgRating: book.avgRating,
             dateRead: book.dateRead,
+            dateAdded: book.dateAdded,
             shelf: book.shelf,
             pages: book.pages,
             yearPublished: book.yearPublished,
             bookshelves: book.bookshelves,
-            updatedAt: sql`now()`,
-          },
-        });
-    }
+          })
+          .onConflictDoUpdate({
+            target: [books.goodreadsBookId, books.userId],
+            set: {
+              title: book.title,
+              author: book.author,
+              isbn13: book.isbn13 || null,
+              myRating: book.myRating,
+              avgRating: book.avgRating,
+              dateRead: book.dateRead,
+              shelf: book.shelf,
+              pages: book.pages,
+              yearPublished: book.yearPublished,
+              bookshelves: book.bookshelves,
+              updatedAt: sql`now()`,
+            },
+          })
+      )
+    );
 
     return NextResponse.json({ imported: body.length });
   } catch (err) {

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { db } from '@/lib/db';
 import { books } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { requireApiUser } from '@/lib/auth/requireApiUser';
 import { checkAiLimit } from '@/lib/auth/rateLimit';
+import { openrouter } from '@/lib/openrouter';
 
 export const maxDuration = 30;
 
@@ -15,10 +15,6 @@ const LABEL_COLORS = [
   '#5987AC', '#7986CB', '#4DB6AC', '#8BA668',
   '#81C784', '#B58957', '#FFB74D', '#F06292',
 ];
-
-const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY!,
-});
 
 const suggestSchema = z.object({
   labels: z.array(
@@ -68,7 +64,6 @@ export async function POST() {
 
     const { object } = await generateObject({
       model: openrouter('anthropic/claude-3.5-haiku'),
-      mode: 'json',
       system: `You are a librarian organising a personal book collection into categories.
 
 Analyse the book list and suggest 5-7 label categories that best organise this collection. Each label should:

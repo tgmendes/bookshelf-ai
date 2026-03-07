@@ -4,6 +4,7 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { UIMessage } from 'ai';
 import { Sparkles, User, Bookmark, Loader2 } from 'lucide-react';
+import { getMessageText } from '@/hooks/useChat';
 
 interface ChatMessageProps {
   message: UIMessage;
@@ -19,12 +20,6 @@ interface BookCardButtonProps {
   onAddBook: (title: string, author: string) => Promise<void>;
 }
 
-function getMessageText(message: UIMessage): string {
-  return message.parts
-    .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-    .map((p) => p.text)
-    .join('');
-}
 
 function BookSuggestionCard({ title, author, onAddBook }: BookCardButtonProps) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'saved'>('idle');
