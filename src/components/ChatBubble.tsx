@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageCircle, X, Send, Trash2, Sparkles } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { ChatMessage } from './ChatMessage';
+import { TypingIndicator } from './TypingIndicator';
 import { SaveRecommendationModal } from './SaveRecommendationModal';
 import type { UIMessage } from 'ai';
 
@@ -24,6 +25,7 @@ export function ChatBubble() {
     messages,
     setMessages,
     isStreaming,
+    isWaiting,
     error,
     sendMessage,
     clearMessages,
@@ -176,6 +178,7 @@ export function ChatBubble() {
                 />
               ))
             )}
+            {isWaiting && <TypingIndicator />}
             {error && (
               <p className="text-center text-xs text-red-500 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-1.5">
                 {error}

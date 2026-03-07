@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useChat } from '@/hooks/useChat';
 import { ChatMessage } from './ChatMessage';
+import { TypingIndicator } from './TypingIndicator';
 import { SaveRecommendationModal } from './SaveRecommendationModal';
 import type { UIMessage } from 'ai';
 import { Send, Trash2, Sparkles } from 'lucide-react';
@@ -19,7 +20,7 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ initialMessages }: ChatInterfaceProps) {
-  const { messages, isStreaming, error, sendMessage, clearMessages, suggestedBooksMap } =
+  const { messages, isStreaming, isWaiting, error, sendMessage, clearMessages, suggestedBooksMap } =
     useChat(initialMessages);
   const [input, setInput] = useState('');
   const [saveModalOpen, setSaveModalOpen] = useState(false);
@@ -109,6 +110,7 @@ export function ChatInterface({ initialMessages }: ChatInterfaceProps) {
               />
             ))
           )}
+          {isWaiting && <TypingIndicator />}
           {error && (
             <p className="text-center text-sm text-red-500 bg-red-50 dark:bg-red-950/30 rounded-lg px-4 py-2">
               {error}

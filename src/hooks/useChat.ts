@@ -77,6 +77,7 @@ export function useChat(initialMessages?: UIMessage[]) {
     messages,
     setMessages,
     isStreaming,
+    isWaiting: status === 'submitted',
     error: aiError?.message ?? null,
     sendMessage,
     clearMessages,
