@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, X, Loader2, Check, BookOpen } from 'lucide-react';
+import { Search, X, Loader2, Check, BookOpen, Star } from 'lucide-react';
 
 interface SearchResult {
   title: string;
@@ -28,6 +28,36 @@ interface BookSearchModalProps {
   onClose: () => void;
 }
 
+function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [hovered, setHovered] = useState(0);
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange(value === star ? 0 : star)}
+          onMouseEnter={() => setHovered(star)}
+          onMouseLeave={() => setHovered(0)}
+          className="p-0.5 transition-transform hover:scale-110"
+          title={`${star} star${star !== 1 ? 's' : ''}`}
+        >
+          <Star
+            className={`w-4 h-4 transition-colors ${
+              star <= (hovered || value)
+                ? 'fill-amber-400 text-amber-400'
+                : 'text-muted'
+            }`}
+          />
+        </button>
+      ))}
+      {value > 0 && (
+        <span className="ml-1 text-xs text-muted">{value}/5</span>
+      )}
+    </div>
+  );
+}
+
 export function BookSearchModal({ isOpen, onClose }: BookSearchModalProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -35,6 +65,7 @@ export function BookSearchModal({ isOpen, onClose }: BookSearchModalProps) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [shelf, setShelf] = useState<Shelf>('to-read');
+  const [rating, setRating] = useState(0);
   const [addedTitles, setAddedTitles] = useState<Set<string>>(new Set());
   const [addingTitle, setAddingTitle] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -47,8 +78,14 @@ export function BookSearchModal({ isOpen, onClose }: BookSearchModalProps) {
       setResults([]);
       setAddedTitles(new Set());
       setAddingTitle(null);
+      setRating(0);
     }
   }, [isOpen]);
+
+  // Reset rating when shelf changes away from 'read'
+  useEffect(() => {
+    if (shelf !== 'read') setRating(0);
+  }, [shelf]);
 
   const searchBooks = useCallback(async (q: string) => {
     if (!q.trim()) {
@@ -89,9 +126,11 @@ export function BookSearchModal({ isOpen, onClose }: BookSearchModalProps) {
           coverUrl: result.coverUrl,
           synopsis: result.synopsis,
           avgRating: result.avgRating,
+          myRating: rating > 0 ? rating : null,
           yearPublished: result.yearPublished,
           pages: result.pages,
           isbn13: result.isbn13,
+          dateRead: shelf === 'read' ? new Date().toISOString().split('T')[0] : null,
         }),
       });
       if (res.ok) {
@@ -119,7 +158,33 @@ export function BookSearchModal({ isOpen, onClose }: BookSearchModalProps) {
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] px-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-lg bg-surface rounded-2xl border border-border shadow-xl animate-scale-in overflow-hidden">
-        {/* Header */}
+
+        {/* Shelf + rating selector — pick destination first */}
+        <div className="px-4 pt-4 pb-3 border-b border-border space-y-2.5">
+          <div className="flex gap-1.5 flex-wrap">
+            {SHELVES.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => setShelf(s.value)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  shelf === s.value
+                    ? 'bg-primary text-white'
+                    : 'bg-primary-light text-muted hover:text-foreground'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          {shelf === 'read' && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted">Your rating:</span>
+              <StarRating value={rating} onChange={setRating} />
+            </div>
+          )}
+        </div>
+
+        {/* Search bar */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
           <Search className="w-5 h-5 text-muted flex-shrink-0" />
           <input
@@ -132,23 +197,6 @@ export function BookSearchModal({ isOpen, onClose }: BookSearchModalProps) {
           <button onClick={onClose} className="p-1 text-muted hover:text-foreground rounded">
             <X className="w-4 h-4" />
           </button>
-        </div>
-
-        {/* Shelf selector */}
-        <div className="flex gap-1.5 px-4 py-2.5 border-b border-border">
-          {SHELVES.map((s) => (
-            <button
-              key={s.value}
-              onClick={() => setShelf(s.value)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                shelf === s.value
-                  ? 'bg-primary text-white'
-                  : 'bg-primary-light text-muted hover:text-foreground'
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
         </div>
 
         {/* Results */}

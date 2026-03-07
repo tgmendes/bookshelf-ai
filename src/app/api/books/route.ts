@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { title, author, shelf, coverUrl, synopsis, avgRating, yearPublished, pages, isbn13 } = body;
+    const { title, author, shelf, coverUrl, synopsis, avgRating, myRating, yearPublished, pages, isbn13, dateRead } = body;
 
     if (!title || !author) {
       return NextResponse.json({ error: 'Title and author are required' }, { status: 400 });
@@ -43,10 +43,12 @@ export async function POST(req: NextRequest) {
         coverUrl: coverUrl ?? null,
         synopsis: synopsis ?? null,
         avgRating: avgRating ?? null,
+        myRating: myRating ?? null,
         yearPublished: yearPublished ?? null,
         pages: pages ?? 0,
         isbn13: isbn13 ?? null,
         dateAdded: new Date().toISOString().split('T')[0],
+        dateRead: dateRead ?? null,
       })
       .returning({ id: books.id });
 
