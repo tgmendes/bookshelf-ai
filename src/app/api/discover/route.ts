@@ -59,9 +59,17 @@ You are generating structured book recommendations. Return exactly 5 books that 
 - pages: approximate page count (if you know it)
 - rating: the book's general rating out of 5 (e.g. 4.2) if you know it
 
-IMPORTANT: Never recommend books the user has already read, is currently reading, or has on their want-to-read list.`,
+IMPORTANT: Never recommend books the user has already read, is currently reading, or has on their want-to-read list.
+IMPORTANT: You must respond with a valid JSON object only — no prose, no explanation, no markdown.`,
       prompt,
       schema: recommendationSchema,
+      experimental_repairText: async ({ text }) => {
+        // Strip markdown code fences if present
+        const stripped = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+        // Try to find a JSON object in the text
+        const match = stripped.match(/\{[\s\S]*\}/);
+        return match ? match[0] : null;
+      },
     });
 
     return NextResponse.json(object);

@@ -72,9 +72,18 @@ Analyse the book list and suggest 5-7 label categories that best organise this c
 - Use a different colorIndex (0-${LABEL_COLORS.length - 1}) for each label — pick indices that feel thematically appropriate
 - A book can belong to multiple labels
 - Focus on genre/theme categories that are actually represented in the collection
-- Don't create a label if fewer than 3 books would match it`,
+- Don't create a label if fewer than 3 books would match it
+
+IMPORTANT: You must respond with a valid JSON object only — no prose, no explanation, no markdown.`,
       prompt: `Organise these ${allBooks.length} books into labels:\n\n${bookList}`,
       schema: suggestSchema,
+      experimental_repairText: async ({ text }) => {
+        // Strip markdown code fences if present
+        const stripped = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+        // Try to find a JSON object in the text
+        const match = stripped.match(/\{[\s\S]*\}/);
+        return match ? match[0] : null;
+      },
     });
 
     // Map colorIndex to actual hex colors and add count
