@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookOpen, BarChart2, Settings, Library, Menu, X, LogOut, Shield } from 'lucide-react';
+import { BookOpen, BarChart2, Settings, Library, Menu, X, LogOut, Shield, Sparkles } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useState, useEffect } from 'react';
 
 const links = [
   { href: '/library', label: 'Library', icon: Library },
+  { href: '/discover', label: 'Discover', icon: Sparkles },
   { href: '/stats', label: 'Stats', icon: BarChart2 },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];

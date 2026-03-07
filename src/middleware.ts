@@ -16,11 +16,13 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     '/library/:path*',
+    '/discover/:path*',
     '/stats/:path*',
     '/settings/:path*',
     '/next-read/:path*',
     '/api/books/:path*',
     '/api/chat/:path*',
+    '/api/discover/:path*',
     '/api/recommendations/:path*',
   ],
 };
