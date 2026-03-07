@@ -6,9 +6,10 @@ import { FetchCoverOverlay } from './FetchCoverOverlay';
 
 interface BookCardProps {
   book: Book;
+  labelColors?: string[];
 }
 
-export function BookCard({ book }: BookCardProps) {
+export function BookCard({ book, labelColors }: BookCardProps) {
   const gradient = getCoverGradient(book.title);
 
   return (
@@ -34,6 +35,19 @@ export function BookCard({ book }: BookCardProps) {
         {/* Fetch cover button for books without a cover */}
         {!book.coverUrl && !book.isRecommendation && (
           <FetchCoverOverlay bookId={book.id} />
+        )}
+
+        {/* Label dots */}
+        {labelColors && labelColors.length > 0 && (
+          <div className="absolute top-2 right-2 z-10 flex gap-1">
+            {labelColors.slice(0, 3).map((color, i) => (
+              <div
+                key={i}
+                className="w-2.5 h-2.5 rounded-full border border-white/50"
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
         )}
       </div>
       <Link

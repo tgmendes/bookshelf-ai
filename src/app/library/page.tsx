@@ -103,8 +103,26 @@ async function getBooks(params: SearchParams, userId: string): Promise<Book[]> {
   }));
 }
 
+async function getBookLabelColors(userId: string): Promise<Record<string, string[]>> {
+  const rows = await db
+    .select({ bookId: bookLabels.bookId, color: labels.color })
+    .from(bookLabels)
+    .innerJoin(labels, eq(bookLabels.labelId, labels.id))
+    .where(eq(labels.userId, userId));
+
+  const map: Record<string, string[]> = {};
+  for (const row of rows) {
+    if (!map[row.bookId]) map[row.bookId] = [];
+    map[row.bookId].push(row.color);
+  }
+  return map;
+}
+
 async function LibraryGrid({ searchParams, userId, hasBooks }: { searchParams: SearchParams; userId: string; hasBooks: boolean }) {
-  const allBooks = await getBooks(searchParams, userId);
+  const [allBooks, labelColorsMap] = await Promise.all([
+    getBooks(searchParams, userId),
+    getBookLabelColors(userId),
+  ]);
   const isNextRead = searchParams.shelf === 'next-read';
 
   if (allBooks.length === 0 && !hasBooks && !isNextRead) {
@@ -127,7 +145,7 @@ async function LibraryGrid({ searchParams, userId, hasBooks }: { searchParams: S
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {allBooks.map((book, i) => (
             <div key={book.id} className="animate-fade-in-up" style={{ animationDelay: `${(i % 10) * 60}ms` }}>
-              <BookCard book={book} />
+              <BookCard book={book} labelColors={labelColorsMap[book.id]} />
             </div>
           ))}
         </div>
@@ -165,7 +183,7 @@ export default async function LibraryPage({
       {hasBooks && <p className="text-muted mb-6">Browse and manage your book collection</p>}
       {hasBooks && (
         <Suspense fallback={<div />}>
-          <LibraryFilters labels={userLabels} />
+          <LibraryFilters labels={userLabels} hasBooks={hasBooks} />
         </Suspense>
       )}
       <Suspense fallback={<div className="text-muted py-8 text-center">Loading…</div>}>

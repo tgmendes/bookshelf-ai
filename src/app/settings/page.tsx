@@ -1,7 +1,6 @@
 import { ImportZone } from '@/components/ImportZone';
 import { FetchCoversButton } from '@/components/FetchCoversButton';
-import { LabelManager } from '@/components/LabelManager';
-import { Settings, Image, Tags } from 'lucide-react';
+import { Settings, Image } from 'lucide-react';
 import { requireUser } from '@/lib/auth/requireUser';
 
 export const dynamic = 'force-dynamic';
@@ -59,22 +58,6 @@ export default async function SettingsPage() {
         <FetchCoversButton />
       </div>
 
-      <div className="bg-surface rounded-2xl border border-border p-6 mt-6">
-        <div className="flex items-start gap-4 mb-6">
-          <div className="w-12 h-12 bg-primary-light rounded-full flex items-center justify-center flex-shrink-0">
-            <Tags className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-foreground">Labels</h2>
-            <p className="text-sm text-muted mt-1">
-              Create custom labels to organize your books by genre, mood, theme, or anything else.
-              Use AI auto-labeling to batch-assign labels.
-            </p>
-          </div>
-        </div>
-
-        <LabelManager />
-      </div>
     </div>
   );
 }
