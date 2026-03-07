@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Sparkles, Check, X, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -37,22 +37,20 @@ export function LabelSuggestModal({ isOpen, onClose }: LabelSuggestModalProps) {
       }
       const data = await res.json();
       setSuggestions(data.labels ?? []);
-      setFetched(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
+      setFetched(true);
       setLoading(false);
     }
   }, []);
 
-  const handleOpen = useCallback(() => {
-    if (!fetched) fetchSuggestions();
-  }, [fetched, fetchSuggestions]);
-
-  // Trigger fetch when modal opens
-  if (isOpen && !fetched && !loading) {
-    handleOpen();
-  }
+  // Trigger fetch once when modal first opens — never auto-retries
+  useEffect(() => {
+    if (isOpen && !fetched && !loading) {
+      fetchSuggestions();
+    }
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const acceptLabel = useCallback(async (label: SuggestedLabel) => {
     setAcceptingName(label.name);
@@ -135,7 +133,7 @@ export function LabelSuggestModal({ isOpen, onClose }: LabelSuggestModalProps) {
           {error && !loading && (
             <div className="text-center py-6">
               <p className="text-sm text-red-500">{error}</p>
-              <button onClick={fetchSuggestions} className="mt-2 text-sm text-primary hover:underline">
+              <button onClick={() => { setFetched(false); fetchSuggestions(); }} className="mt-2 text-sm text-primary hover:underline">
                 Try again
               </button>
             </div>

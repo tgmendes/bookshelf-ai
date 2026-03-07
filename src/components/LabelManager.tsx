@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Check, X, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import type { Label } from '@/lib/types';
 
 const PRESET_COLORS = [
@@ -17,8 +17,6 @@ export function LabelManager() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState('');
-  const [autoLabelId, setAutoLabelId] = useState<string | null>(null);
-  const [autoLabelResult, setAutoLabelResult] = useState<{ id: string; count: number } | null>(null);
 
   const fetchLabels = useCallback(async () => {
     const res = await fetch('/api/labels');
@@ -58,22 +56,6 @@ export function LabelManager() {
     if (res.ok) fetchLabels();
   };
 
-  const handleAutoLabel = async (id: string) => {
-    setAutoLabelId(id);
-    setAutoLabelResult(null);
-    try {
-      const res = await fetch(`/api/labels/${id}/auto-label`, { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
-        setAutoLabelResult({ id, count: data.assigned });
-      } else if (res.status === 429) {
-        alert('Daily AI limit reached. Try again tomorrow.');
-      }
-    } finally {
-      setAutoLabelId(null);
-    }
-  };
-
   if (loading) {
     return <p className="text-sm text-muted">Loading labels…</p>;
   }
@@ -105,21 +87,6 @@ export function LabelManager() {
                 <>
                   <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: label.color }} />
                   <span className="flex-1 text-sm text-foreground">{label.name}</span>
-                  {autoLabelResult?.id === label.id && (
-                    <span className="text-xs text-primary">{autoLabelResult.count} books labeled</span>
-                  )}
-                  <button
-                    onClick={() => handleAutoLabel(label.id)}
-                    disabled={autoLabelId !== null}
-                    className="p-1 text-muted hover:text-primary cursor-pointer disabled:opacity-50"
-                    title="Auto-label with AI"
-                  >
-                    {autoLabelId === label.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-4 h-4" />
-                    )}
-                  </button>
                   <button
                     onClick={() => { setEditId(label.id); setEditName(label.name); setEditColor(label.color); }}
                     className="p-1 text-muted hover:text-foreground cursor-pointer"

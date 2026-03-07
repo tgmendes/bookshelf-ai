@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Check, X, Sparkles, Loader2, Tag } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Tag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { Label } from '@/lib/types';
 
@@ -25,8 +25,6 @@ export function ManageLabelsModal({ isOpen, onClose }: ManageLabelsModalProps) {
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState('');
-  const [autoLabelId, setAutoLabelId] = useState<string | null>(null);
-  const [autoLabelResult, setAutoLabelResult] = useState<{ id: string; count: number } | null>(null);
   const [dirty, setDirty] = useState(false);
 
   const fetchLabels = useCallback(async () => {
@@ -71,23 +69,6 @@ export function ManageLabelsModal({ isOpen, onClose }: ManageLabelsModalProps) {
     if (res.ok) {
       setDirty(true);
       fetchLabels();
-    }
-  };
-
-  const handleAutoLabel = async (id: string) => {
-    setAutoLabelId(id);
-    setAutoLabelResult(null);
-    try {
-      const res = await fetch(`/api/labels/${id}/auto-label`, { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
-        setAutoLabelResult({ id, count: data.assigned });
-        setDirty(true);
-      } else if (res.status === 429) {
-        alert('Daily AI limit reached. Try again tomorrow.');
-      }
-    } finally {
-      setAutoLabelId(null);
     }
   };
 
@@ -149,21 +130,6 @@ export function ManageLabelsModal({ isOpen, onClose }: ManageLabelsModalProps) {
                 <>
                   <span className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: label.color }} />
                   <span className="flex-1 text-sm text-foreground font-medium">{label.name}</span>
-                  {autoLabelResult?.id === label.id && (
-                    <span className="text-xs text-primary">{autoLabelResult.count} labelled</span>
-                  )}
-                  <button
-                    onClick={() => handleAutoLabel(label.id)}
-                    disabled={autoLabelId !== null}
-                    className="p-1 text-muted hover:text-primary transition-colors disabled:opacity-50"
-                    title="Auto-label with AI"
-                  >
-                    {autoLabelId === label.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-3.5 h-3.5" />
-                    )}
-                  </button>
                   <button
                     onClick={() => { setEditId(label.id); setEditName(label.name); setEditColor(label.color); }}
                     className="p-1 text-muted hover:text-foreground transition-colors"

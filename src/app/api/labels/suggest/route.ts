@@ -21,12 +21,13 @@ const suggestSchema = z.object({
     z.object({
       name: z.string(),
       colorIndex: z.number(),
-      bookIds: z.array(z.string()),
+      // Indices into the book list (1-based) rather than full UUIDs
+      bookIndices: z.array(z.number()),
     })
   ),
 });
 
-export async function POST() {
+export async function POST(req: Request) {
   const auth = await requireApiUser();
   if (auth.error) return auth.error;
 
@@ -52,12 +53,11 @@ export async function POST() {
       return NextResponse.json({ labels: [] });
     }
 
+    // Use 1-based numeric indices instead of UUIDs to minimize prompt tokens
     const bookList = allBooks
-      .map((b) => {
-        const parts = [`id:${b.id}`, `"${b.title}" by ${b.author}`, `shelf:${b.shelf}`];
-        if (b.myRating && b.myRating > 0) parts.push(`rating:${b.myRating}/5`);
-        if (b.bookshelves?.length) parts.push(`shelves:${b.bookshelves.join(',')}`);
-        if (b.synopsis) parts.push(`synopsis:${b.synopsis.slice(0, 100)}`);
+      .map((b, i) => {
+        const parts = [`${i + 1}`, `"${b.title}" by ${b.author}`, b.shelf];
+        if (b.myRating && b.myRating > 0) parts.push(`★${b.myRating}`);
         return parts.join(' | ');
       })
       .join('\n');
@@ -66,36 +66,34 @@ export async function POST() {
       model: openrouter('anthropic/claude-3.5-haiku'),
       system: `You are a librarian organising a personal book collection into categories.
 
-Analyse the book list and suggest 5-7 label categories that best organise this collection. Each label should:
+Suggest 5-7 label categories that best organise this collection. Each label should:
 - Have a clear, concise name (1-3 words, e.g. "Literary Fiction", "Sci-Fi", "Memoir", "Fantasy", "Historical")
-- Include the IDs of all books that belong to that category
-- Use a different colorIndex (0-${LABEL_COLORS.length - 1}) for each label — pick indices that feel thematically appropriate
-- A book can belong to multiple labels
-- Focus on genre/theme categories that are actually represented in the collection
-- Don't create a label if fewer than 3 books would match it
+- List the 1-based row numbers of all books that belong to that category (bookIndices)
+- Use a different colorIndex (0-${LABEL_COLORS.length - 1}) for each label
+- A book can appear in multiple labels
+- Only create a label if at least 3 books match
 
 IMPORTANT: You must respond with a valid JSON object only — no prose, no explanation, no markdown.`,
       prompt: `Organise these ${allBooks.length} books into labels:\n\n${bookList}`,
       schema: suggestSchema,
+      abortSignal: req.signal,
       experimental_repairText: async ({ text }) => {
-        // Strip markdown code fences if present
         const stripped = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
-        // Try to find a JSON object in the text
         const match = stripped.match(/\{[\s\S]*\}/);
         return match ? match[0] : null;
       },
     });
 
-    // Map colorIndex to actual hex colors and add count
+    // Map indices back to real book IDs
     const result = object.labels.map((l) => {
-      const validBookIds = l.bookIds.filter((id) =>
-        allBooks.some((b) => b.id === id)
-      );
+      const bookIds = l.bookIndices
+        .map((idx) => allBooks[idx - 1]?.id)
+        .filter((id): id is string => !!id);
       return {
         name: l.name,
         color: LABEL_COLORS[l.colorIndex % LABEL_COLORS.length],
-        bookIds: validBookIds,
-        count: validBookIds.length,
+        bookIds,
+        count: bookIds.length,
       };
     });
 
