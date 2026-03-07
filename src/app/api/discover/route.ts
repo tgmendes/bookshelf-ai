@@ -80,6 +80,7 @@ export async function POST(req: Request) {
 
     const { object } = await generateObject({
       model: openrouter('anthropic/claude-3.5-haiku'),
+      mode: 'json',
       system: `${systemPrompt}
 
 ## Task

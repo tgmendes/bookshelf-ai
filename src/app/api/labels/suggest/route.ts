@@ -68,6 +68,7 @@ export async function POST() {
 
     const { object } = await generateObject({
       model: openrouter('anthropic/claude-3.5-haiku'),
+      mode: 'json',
       system: `You are a librarian organising a personal book collection into categories.
 
 Analyse the book list and suggest 5-7 label categories that best organise this collection. Each label should:
