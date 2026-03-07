@@ -10,7 +10,7 @@ import { fetchUserLibraryWithLabels } from '@/lib/fetchUserLibrary';
 export const maxDuration = 30;
 
 const recommendationSchema = z.object({
-  books: z.array(
+  recommendations: z.array(
     z.object({
       title: z.string(),
       author: z.string(),

@@ -3,21 +3,17 @@ import { books, recommendations, bookLabels, labels } from '@/lib/db/schema';
 import { eq, and, ne } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, BookOpen, Star } from 'lucide-react';
+import { ArrowLeft, BookOpen } from 'lucide-react';
 import { getCoverGradient } from '@/lib/coverGradients';
 import { FetchSingleCoverButton } from '@/components/FetchSingleCoverButton';
 import { SimilarBooks } from '@/components/SimilarBooks';
 import { BookLabels } from '@/components/BookLabels';
+import { BookStatusEditor } from '@/components/BookStatusEditor';
 import type { Shelf, Label } from '@/lib/types';
 import { requireUser } from '@/lib/auth/requireUser';
 
 export const dynamic = 'force-dynamic';
 
-const shelfLabel: Record<string, string> = {
-  'read': 'Read',
-  'currently-reading': 'Currently Reading',
-  'to-read': 'Want to Read',
-};
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -181,9 +177,11 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
 
           {/* Meta badges */}
           <div className="flex flex-wrap gap-2 mb-6">
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary-light text-primary">
-              {book.isRecommendation ? 'AI Recommended' : shelfLabel[book.shelf] ?? book.shelf}
-            </span>
+            {book.isRecommendation && (
+              <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary-light text-primary">
+                AI Recommended
+              </span>
+            )}
             {book.pages > 0 && (
               <span className="px-3 py-1 rounded-full text-xs font-medium bg-surface border border-border text-muted">
                 {book.pages.toLocaleString()} pages
@@ -196,20 +194,14 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
             )}
           </div>
 
-          {/* Rating */}
-          {book.myRating > 0 && (
+          {/* Editable shelf + rating (library books only) */}
+          {!book.isRecommendation && (
             <div className="mb-6">
-              <p className="text-xs text-muted mb-1.5">My rating</p>
-              <div className="flex items-center gap-0.5">
-                {Array.from({ length: 5 }, (_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-5 h-5 ${
-                      i < book!.myRating ? 'fill-primary text-primary' : 'text-border'
-                    }`}
-                  />
-                ))}
-              </div>
+              <BookStatusEditor
+                bookId={book.id}
+                initialShelf={book.shelf}
+                initialRating={book.myRating}
+              />
             </div>
           )}
 
