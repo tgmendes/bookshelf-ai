@@ -3,9 +3,9 @@
 import { useCallback, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { parseGoodreadsCSV } from '@/lib/parseCSV';
-import { Upload, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, Loader2, ImageDown } from 'lucide-react';
 
-type Status = 'idle' | 'parsing' | 'uploading' | 'success' | 'error';
+type Status = 'idle' | 'parsing' | 'uploading' | 'success' | 'fetching-covers' | 'error';
 
 export function ImportZone() {
   const router = useRouter();
@@ -13,6 +13,27 @@ export function ImportZone() {
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+
+  const fetchCoversInBatches = useCallback(async () => {
+    setStatus('fetching-covers');
+
+    // Get initial count
+    const countRes = await fetch('/api/books/fetch-covers');
+    if (!countRes.ok) return;
+    let { remaining } = await countRes.json();
+
+    while (remaining > 0) {
+      setMessage(`Fetching covers… (${remaining} remaining)`);
+      const res = await fetch('/api/books/fetch-covers', { method: 'POST' });
+      if (!res.ok) break;
+      const data = await res.json();
+      remaining = data.remaining;
+    }
+
+    setStatus('success');
+    setMessage('All done! Library imported with covers.');
+    router.refresh();
+  }, [router]);
 
   const processFile = useCallback(
     async (file: File) => {
@@ -50,12 +71,12 @@ export function ImportZone() {
       }
 
       const { imported } = await res.json();
-      setStatus('success');
-      setMessage(`Imported ${imported} books!`);
+      setMessage(`Imported ${imported} books! Fetching covers…`);
 
-      setTimeout(() => router.refresh(), 1200);
+      // Auto-fetch covers
+      await fetchCoversInBatches();
     },
-    [router]
+    [fetchCoversInBatches]
   );
 
   const handleDrop = useCallback(
@@ -76,7 +97,7 @@ export function ImportZone() {
     [processFile]
   );
 
-  const isLoading = status === 'parsing' || status === 'uploading';
+  const isLoading = status === 'parsing' || status === 'uploading' || status === 'fetching-covers';
 
   return (
     <div
@@ -105,6 +126,8 @@ export function ImportZone() {
             <CheckCircle className="w-7 h-7 text-emerald-500" />
           ) : status === 'error' ? (
             <AlertCircle className="w-7 h-7 text-red-500" />
+          ) : status === 'fetching-covers' ? (
+            <ImageDown className="w-7 h-7 text-primary animate-pulse" />
           ) : isLoading ? (
             <Loader2 className="w-7 h-7 text-primary animate-spin" />
           ) : (

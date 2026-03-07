@@ -17,7 +17,6 @@ export const config = {
   matcher: [
     '/library/:path*',
     '/stats/:path*',
-    '/chat/:path*',
     '/settings/:path*',
     '/next-read/:path*',
     '/api/books/:path*',

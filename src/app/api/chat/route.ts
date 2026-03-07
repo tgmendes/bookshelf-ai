@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { convertToModelMessages, streamText, type UIMessage } from 'ai';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { db } from '@/lib/db';
 import { books, chatMessages, bookLabels, labels } from '@/lib/db/schema';
 import { buildSystemPrompt } from '@/lib/buildSystemPrompt';
@@ -7,12 +9,13 @@ import type { Book } from '@/lib/types';
 import { requireApiUser } from '@/lib/auth/requireApiUser';
 import { checkAiLimit } from '@/lib/auth/rateLimit';
 
-interface IncomingMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
+export const maxDuration = 30;
 
-export async function POST(req: NextRequest) {
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY!,
+});
+
+export async function POST(req: Request) {
   const auth = await requireApiUser();
   if (auth.error) return auth.error;
 
@@ -25,14 +28,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { messages }: { messages: IncomingMessage[] } = await req.json();
+    const { messages }: { messages: UIMessage[] } = await req.json();
 
     if (!messages?.length) {
       return NextResponse.json({ error: 'No messages provided' }, { status: 400 });
     }
 
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
+    if (!process.env.OPENROUTER_API_KEY) {
       return NextResponse.json({ error: 'OPENROUTER_API_KEY not set' }, { status: 500 });
     }
 
@@ -66,88 +68,35 @@ export async function POST(req: NextRequest) {
     // Save user message
     const lastUserMsg = messages[messages.length - 1];
     if (lastUserMsg.role === 'user') {
-      await db.insert(chatMessages).values({
-        userId: auth.userId,
-        role: 'user',
-        content: lastUserMsg.content,
-      });
+      const textContent = lastUserMsg.parts
+        ?.filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+        .map((p) => p.text)
+        .join('') ?? '';
+      if (textContent) {
+        await db.insert(chatMessages).values({
+          userId: auth.userId,
+          role: 'user',
+          content: textContent,
+        });
+      }
     }
 
-    const openRouterRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://bookshelf-ai.vercel.app',
-        'X-Title': 'BookShelf AI',
-      },
-      body: JSON.stringify({
-        model: 'anthropic/claude-3.5-haiku',
-        stream: true,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages,
-        ],
-      }),
-    });
-
-    if (!openRouterRes.ok) {
-      const errText = await openRouterRes.text();
-      console.error('OpenRouter error:', errText);
-      return NextResponse.json({ error: 'AI request failed' }, { status: 502 });
-    }
-
-    // Stream response back to client, capture full text for saving
-    let fullContent = '';
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        const reader = openRouterRes.body!.getReader();
-        const decoder = new TextDecoder();
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value, { stream: true });
-            controller.enqueue(new TextEncoder().encode(chunk));
-
-            // Extract text from SSE for saving
-            const lines = chunk.split('\n');
-            for (const line of lines) {
-              if (!line.startsWith('data: ')) continue;
-              const data = line.slice(6).trim();
-              if (data === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(data);
-                fullContent += parsed.choices?.[0]?.delta?.content ?? '';
-              } catch {
-                // skip malformed lines
-              }
-            }
-          }
-        } finally {
-          controller.close();
-          // Save assistant response after streaming completes
-          if (fullContent) {
-            await db.insert(chatMessages).values({
-              userId: auth.userId,
-              role: 'assistant',
-              content: fullContent,
-            }).catch(console.error);
-          }
+    const result = streamText({
+      model: openrouter('anthropic/claude-3.5-haiku'),
+      system: systemPrompt,
+      messages: await convertToModelMessages(messages),
+      onFinish: async ({ text }) => {
+        if (text) {
+          await db.insert(chatMessages).values({
+            userId: auth.userId,
+            role: 'assistant',
+            content: text,
+          }).catch(console.error);
         }
       },
     });
 
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      },
-    });
+    return result.toUIMessageStreamResponse();
   } catch (err) {
     console.error('Chat route error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

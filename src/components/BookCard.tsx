@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Book } from '@/lib/types';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Star } from 'lucide-react';
 import { getCoverGradient } from '@/lib/coverGradients';
 import { FetchCoverOverlay } from './FetchCoverOverlay';
 
@@ -42,6 +42,21 @@ export function BookCard({ book }: BookCardProps) {
       >
         <p className="text-foreground text-sm font-medium leading-snug line-clamp-1">{book.title}</p>
         <p className="text-muted text-xs mt-0.5 truncate">{book.author}</p>
+        {book.myRating > 0 ? (
+          <div className="flex items-center gap-0.5 mt-1">
+            {Array.from({ length: 5 }, (_, i) => (
+              <Star
+                key={i}
+                className={`w-3 h-3 ${i < book.myRating ? 'text-amber-400 fill-amber-400' : 'text-border'}`}
+              />
+            ))}
+          </div>
+        ) : book.avgRating ? (
+          <div className="flex items-center gap-1 mt-1">
+            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+            <span className="text-muted text-xs">{book.avgRating.toFixed(1)}</span>
+          </div>
+        ) : null}
       </Link>
     </div>
   );

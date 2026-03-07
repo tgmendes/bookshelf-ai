@@ -3,6 +3,7 @@ import { books, recommendations, bookLabels, labels } from '@/lib/db/schema';
 import { BookCard } from '@/components/BookCard';
 import { LibraryFilters } from '@/components/LibraryFilters';
 import { EmptyLibrary } from '@/components/EmptyLibrary';
+import { AddBookButton } from '@/components/AddBookButton';
 import { Suspense } from 'react';
 import { asc, desc, ilike, eq, or, and, count, inArray } from 'drizzle-orm';
 import type { Book, Shelf, Label } from '@/lib/types';
@@ -157,7 +158,10 @@ export default async function LibraryPage({
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="font-display text-4xl text-foreground mb-2 animate-fade-in">My Library</h1>
+      <div className="flex items-center justify-between mb-2 animate-fade-in">
+        <h1 className="font-display text-4xl text-foreground">My Library</h1>
+        {hasBooks && <AddBookButton />}
+      </div>
       {hasBooks && <p className="text-muted mb-6">Browse and manage your book collection</p>}
       {hasBooks && (
         <Suspense fallback={<div />}>

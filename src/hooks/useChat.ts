@@ -1,7 +1,9 @@
 'use client';
 
+import { useChat as useAIChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { ChatMessage } from '@/lib/types';
+import type { UIMessage } from 'ai';
 
 const BOOK_REGEX = /\*\*([^*]+)\*\*\s+by\s+([A-Z][^\n,!?.]+)/g;
 
@@ -15,111 +17,70 @@ function extractSuggestedBooks(text: string): Array<{ title: string; author: str
   return matches;
 }
 
-export function useChat(initialMessages: ChatMessage[] = []) {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const prevStreamingRef = useRef(false);
+export function getMessageText(message: UIMessage): string {
+  return message.parts
+    .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+    .map((p) => p.text)
+    .join('');
+}
 
-  // After streaming finishes, extract book suggestions from the last assistant message
+const transport = new DefaultChatTransport({ api: '/api/chat' });
+
+export function useChat(initialMessages?: UIMessage[]) {
+  const [suggestedBooksMap, setSuggestedBooksMap] = useState<
+    Record<string, Array<{ title: string; author: string }>>
+  >({});
+  const initializedRef = useRef(false);
+
+  const {
+    messages,
+    setMessages,
+    status,
+    error: aiError,
+    sendMessage: aiSendMessage,
+    stop,
+  } = useAIChat({
+    transport,
+    onFinish: ({ message }) => {
+      const text = getMessageText(message);
+      const books = extractSuggestedBooks(text);
+      if (books.length > 0) {
+        setSuggestedBooksMap((prev) => ({ ...prev, [message.id]: books }));
+      }
+    },
+  });
+
+  // Set initial messages on mount
   useEffect(() => {
-    const wasStreaming = prevStreamingRef.current;
-    prevStreamingRef.current = isStreaming;
-
-    if (wasStreaming && !isStreaming) {
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (!last || last.role !== 'assistant') return prev;
-        const suggestedBooks = extractSuggestedBooks(last.content);
-        if (suggestedBooks.length === 0) return prev;
-        return prev.map((m, i) =>
-          i === prev.length - 1 ? { ...m, suggestedBooks } : m
-        );
-      });
+    if (initialMessages && initialMessages.length > 0 && !initializedRef.current) {
+      initializedRef.current = true;
+      setMessages(initialMessages);
     }
-  }, [isStreaming]);
+  }, [initialMessages, setMessages]);
+
+  const isStreaming = status === 'submitted' || status === 'streaming';
 
   const sendMessage = useCallback(
     async (content: string) => {
       if (!content.trim() || isStreaming) return;
-
-      const userMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'user',
-        content: content.trim(),
-      };
-
-      const newMessages = [...messages, userMessage];
-      setMessages(newMessages);
-      setIsStreaming(true);
-      setError(null);
-
-      const assistantId = crypto.randomUUID();
-      setMessages((prev) => [
-        ...prev,
-        { id: assistantId, role: 'assistant', content: '' },
-      ]);
-
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: newMessages.map(({ role, content }) => ({ role, content })),
-          }),
-        });
-
-        if (!res.ok) {
-          const err = await res.text();
-          throw new Error(err || 'Chat request failed');
-        }
-
-        const reader = res.body!.getReader();
-        const decoder = new TextDecoder();
-        let accumulated = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const data = line.slice(6).trim();
-            if (data === '[DONE]') break;
-
-            try {
-              const parsed = JSON.parse(data);
-              const token = parsed.choices?.[0]?.delta?.content ?? '';
-              if (token) {
-                accumulated += token;
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantId ? { ...m, content: accumulated } : m
-                  )
-                );
-              }
-            } catch {
-              // malformed SSE line, skip
-            }
-          }
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
-        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
-      } finally {
-        setIsStreaming(false);
-      }
+      aiSendMessage({ text: content.trim() });
     },
-    [messages, isStreaming]
+    [isStreaming, aiSendMessage]
   );
 
   const clearMessages = useCallback(() => {
     setMessages([]);
-    setError(null);
-  }, []);
+    setSuggestedBooksMap({});
+  }, [setMessages]);
 
-  return { messages, isStreaming, error, sendMessage, clearMessages };
+  return {
+    messages,
+    setMessages,
+    isStreaming,
+    error: aiError?.message ?? null,
+    sendMessage,
+    clearMessages,
+    suggestedBooksMap,
+    stop,
+  };
 }

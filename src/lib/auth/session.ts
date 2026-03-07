@@ -15,7 +15,7 @@ export async function createSession(userId: string): Promise<string> {
   return row.id;
 }
 
-export async function getSession(): Promise<{ userId: string; email: string; role: string } | null> {
+export async function getSession(): Promise<{ userId: string; email: string; role: string; aiUnlimited: boolean } | null> {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get(COOKIE_NAME)?.value;
   if (!sessionId) return null;
@@ -26,6 +26,7 @@ export async function getSession(): Promise<{ userId: string; email: string; rol
       userId: sessions.userId,
       email: users.email,
       role: users.role,
+      aiUnlimited: users.aiUnlimited,
     })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))
@@ -33,7 +34,7 @@ export async function getSession(): Promise<{ userId: string; email: string; rol
     .limit(1);
 
   if (!rows[0]) return null;
-  return { userId: rows[0].userId, email: rows[0].email, role: rows[0].role };
+  return { userId: rows[0].userId, email: rows[0].email, role: rows[0].role, aiUnlimited: rows[0].aiUnlimited };
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {

@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import type { ChatMessage as ChatMessageType } from '@/lib/types';
+import type { UIMessage } from 'ai';
 import { Sparkles, User, Bookmark, Loader2 } from 'lucide-react';
 
 interface ChatMessageProps {
-  message: ChatMessageType;
+  message: UIMessage;
   isStreaming?: boolean;
+  suggestedBooks?: Array<{ title: string; author: string }>;
   onSave?: (content: string) => void;
   onAddBook?: (title: string, author: string) => Promise<void>;
 }
@@ -16,6 +17,13 @@ interface BookCardButtonProps {
   title: string;
   author: string;
   onAddBook: (title: string, author: string) => Promise<void>;
+}
+
+function getMessageText(message: UIMessage): string {
+  return message.parts
+    .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+    .map((p) => p.text)
+    .join('');
 }
 
 function BookSuggestionCard({ title, author, onAddBook }: BookCardButtonProps) {
@@ -57,10 +65,11 @@ function BookSuggestionCard({ title, author, onAddBook }: BookCardButtonProps) {
   );
 }
 
-export function ChatMessage({ message, isStreaming, onSave, onAddBook }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming, suggestedBooks, onSave, onAddBook }: ChatMessageProps) {
   const isUser = message.role === 'user';
+  const content = getMessageText(message);
   const hasSuggestions =
-    !isUser && !isStreaming && (message.suggestedBooks?.length ?? 0) > 0 && onAddBook;
+    !isUser && !isStreaming && (suggestedBooks?.length ?? 0) > 0 && onAddBook;
 
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -85,11 +94,11 @@ export function ChatMessage({ message, isStreaming, onSave, onAddBook }: ChatMes
           }`}
         >
           {isUser ? (
-            <p>{message.content}</p>
+            <p>{content}</p>
           ) : (
             <div className="prose prose-sm max-w-none">
-              <ReactMarkdown>{message.content}</ReactMarkdown>
-              {isStreaming && message.content === '' && (
+              <ReactMarkdown>{content}</ReactMarkdown>
+              {isStreaming && content === '' && (
                 <span className="inline-flex gap-1">
                   <span className="w-1.5 h-1.5 bg-muted rounded-full animate-bounce [animation-delay:0ms]" />
                   <span className="w-1.5 h-1.5 bg-muted rounded-full animate-bounce [animation-delay:150ms]" />
@@ -101,9 +110,9 @@ export function ChatMessage({ message, isStreaming, onSave, onAddBook }: ChatMes
         </div>
 
         {/* Bookmark button for assistant messages */}
-        {!isUser && onSave && !isStreaming && message.content && (
+        {!isUser && onSave && !isStreaming && content && (
           <button
-            onClick={() => onSave(message.content)}
+            onClick={() => onSave(content)}
             title="Save recommendation"
             className="absolute top-2 right-2 p-1 text-muted hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity rounded"
           >
@@ -114,7 +123,7 @@ export function ChatMessage({ message, isStreaming, onSave, onAddBook }: ChatMes
         {/* Book suggestion cards */}
         {hasSuggestions && (
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
-            {message.suggestedBooks!.map((book) => (
+            {suggestedBooks!.map((book) => (
               <BookSuggestionCard
                 key={`${book.title}::${book.author}`}
                 title={book.title}

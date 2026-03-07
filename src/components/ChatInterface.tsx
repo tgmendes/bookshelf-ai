@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useChat } from '@/hooks/useChat';
 import { ChatMessage } from './ChatMessage';
 import { SaveRecommendationModal } from './SaveRecommendationModal';
-import type { ChatMessage as ChatMessageType } from '@/lib/types';
+import type { UIMessage } from 'ai';
 import { Send, Trash2, Sparkles } from 'lucide-react';
 
 const STARTER_PROMPTS = [
@@ -15,11 +15,12 @@ const STARTER_PROMPTS = [
 ];
 
 interface ChatInterfaceProps {
-  initialMessages: ChatMessageType[];
+  initialMessages?: UIMessage[];
 }
 
 export function ChatInterface({ initialMessages }: ChatInterfaceProps) {
-  const { messages, isStreaming, error, sendMessage, clearMessages } = useChat(initialMessages);
+  const { messages, isStreaming, error, sendMessage, clearMessages, suggestedBooksMap } =
+    useChat(initialMessages);
   const [input, setInput] = useState('');
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [saveDefaultReason, setSaveDefaultReason] = useState('');
@@ -102,6 +103,7 @@ export function ChatInterface({ initialMessages }: ChatInterfaceProps) {
                 key={msg.id}
                 message={msg}
                 isStreaming={isStreaming && i === messages.length - 1 && msg.role === 'assistant'}
+                suggestedBooks={suggestedBooksMap[msg.id]}
                 onSave={msg.role === 'assistant' ? handleOpenSave : undefined}
                 onAddBook={msg.role === 'assistant' ? handleAddBook : undefined}
               />
