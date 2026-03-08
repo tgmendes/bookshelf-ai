@@ -99,6 +99,17 @@ export const bookLabels = pgTable('book_labels', {
   unique('book_labels_book_label_unique').on(t.bookId, t.labelId),
 ]);
 
+export const aiCache = pgTable('ai_cache', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  cacheKey: text('cache_key').notNull(),
+  result: text('result').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => [
+  unique('ai_cache_user_key_unique').on(t.userId, t.cacheKey),
+]);
+
 export const siteConfig = pgTable('site_config', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),

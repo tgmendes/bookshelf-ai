@@ -1,5 +1,50 @@
 import type { Book } from './types';
 
+// Lean prompt for discover — ~50% fewer tokens than buildSystemPrompt.
+// Strips labels, caps read list to top-rated books, keeps full exclusion list.
+export function buildDiscoverSystemPrompt(library: Book[]): string {
+  const readBooks = library.filter((b) => b.shelf === 'read');
+  const currentlyReading = library.filter((b) => b.shelf === 'currently-reading');
+  const toRead = library.filter((b) => b.shelf === 'to-read');
+
+  const ratedBooks = readBooks.filter((b) => b.myRating > 0);
+  const avgRating =
+    ratedBooks.length > 0
+      ? (ratedBooks.reduce((s, b) => s + b.myRating, 0) / ratedBooks.length).toFixed(1)
+      : 'N/A';
+
+  const authorCounts: Record<string, number> = {};
+  readBooks.forEach((b) => { authorCounts[b.author] = (authorCounts[b.author] || 0) + 1; });
+  const topAuthors = Object.entries(authorCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([author, count]) => `${author} (${count})`)
+    .join(', ');
+
+  const topRated = readBooks
+    .filter((b) => b.myRating >= 4)
+    .sort((a, b) => b.myRating - a.myRating)
+    .slice(0, 20)
+    .map((b) => `"${b.title}" by ${b.author} (${b.myRating}/5)`)
+    .join('\n');
+
+  const exclusions = [...readBooks, ...currentlyReading, ...toRead]
+    .map((b) => `- "${b.title}" by ${b.author}`)
+    .join('\n');
+
+  return `You are a book recommendation engine.
+
+## Reader profile
+- Books read: ${readBooks.length} | Avg rating: ${avgRating}/5
+- Favourite authors: ${topAuthors || 'N/A'}
+
+## Highly rated (taste signals)
+${topRated || 'None yet'}
+
+## Already in library — NEVER recommend these:
+${exclusions || 'None'}`;
+}
+
 export function buildSystemPrompt(books: Book[], labelsByBookId?: Record<string, string[]>): string {
   const readBooks = books.filter((b) => b.shelf === 'read');
   const currentlyReading = books.filter((b) => b.shelf === 'currently-reading');

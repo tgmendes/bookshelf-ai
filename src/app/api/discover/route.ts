@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import { buildSystemPrompt } from '@/lib/buildSystemPrompt';
+import { buildDiscoverSystemPrompt } from '@/lib/buildSystemPrompt';
 import { requireApiUser } from '@/lib/auth/requireApiUser';
 import { checkAiLimit } from '@/lib/auth/rateLimit';
 import { openrouter } from '@/lib/openrouter';
 import { fetchUserLibraryWithLabels } from '@/lib/fetchUserLibrary';
+import { getCached, setCached, libraryFingerprint, withDedup } from '@/lib/aiCache';
 
 export const maxDuration = 30;
+
+const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const recommendationSchema = z.object({
   recommendations: z.array(
@@ -25,14 +28,6 @@ export async function POST(req: Request) {
   const auth = await requireApiUser();
   if (auth.error) return auth.error;
 
-  const { allowed } = await checkAiLimit(auth.userId);
-  if (!allowed) {
-    return NextResponse.json(
-      { error: 'Daily AI limit reached. Try again tomorrow.' },
-      { status: 429 }
-    );
-  }
-
   try {
     const { prompt }: { prompt: string } = await req.json();
 
@@ -44,35 +39,50 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'OPENROUTER_API_KEY not set' }, { status: 500 });
     }
 
-    const { library, labelsByBookId } = await fetchUserLibraryWithLabels(auth.userId);
-    const systemPrompt = buildSystemPrompt(library, labelsByBookId);
+    const { library } = await fetchUserLibraryWithLabels(auth.userId);
+    const fingerprint = libraryFingerprint(library);
+    const cacheKey = `discover:${fingerprint}:${prompt.trim().toLowerCase().slice(0, 100)}`;
 
-    const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3.5-haiku'),
-      system: `${systemPrompt}
+    // Serve from cache — does NOT consume rate limit
+    const cached = await getCached(auth.userId, cacheKey);
+    if (cached) return NextResponse.json(cached);
+
+    // Only check rate limit when we're actually going to call AI
+    const { allowed } = await checkAiLimit(auth.userId);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Daily AI limit reached. Try again tomorrow.' },
+        { status: 429 }
+      );
+    }
+
+    const result = await withDedup(`${auth.userId}:${cacheKey}`, async () => {
+      const systemPrompt = buildDiscoverSystemPrompt(library);
+
+      const { object } = await generateObject({
+        model: openrouter('anthropic/claude-3.5-haiku'),
+        system: `${systemPrompt}
 
 ## Task
-You are generating structured book recommendations. Return exactly 5 books that match the user's request. Each book must include:
-- title: the book's full title
-- author: the author's full name
-- reason: 1-2 sentences explaining why this book fits the request and the user's taste (keep it warm and personal)
-- pages: approximate page count (if you know it)
-- rating: the book's general rating out of 5 (e.g. 4.2) if you know it
-
-IMPORTANT: Never recommend books the user has already read, is currently reading, or has on their want-to-read list.
+Return exactly 5 book recommendations. Each must include title, author, and a warm 1-2 sentence reason explaining why it fits the reader's taste.
 IMPORTANT: You must respond with a valid JSON object only — no prose, no explanation, no markdown.`,
-      prompt,
-      schema: recommendationSchema,
-      experimental_repairText: async ({ text }) => {
-        // Strip markdown code fences if present
-        const stripped = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
-        // Try to find a JSON object in the text
-        const match = stripped.match(/\{[\s\S]*\}/);
-        return match ? match[0] : null;
-      },
+        prompt,
+        schema: recommendationSchema,
+        abortSignal: req.signal,
+        experimental_repairText: async ({ text }) => {
+          const stripped = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+          const match = stripped.match(/\{[\s\S]*\}/);
+          return match ? match[0] : null;
+        },
+      });
+
+      // Cache result — fire-and-forget, don't block the response
+      setCached(auth.userId, cacheKey, object, TTL_MS).catch(console.error);
+
+      return object;
     });
 
-    return NextResponse.json(object);
+    return NextResponse.json(result);
   } catch (err) {
     console.error('Discover route error:', err);
     return NextResponse.json({ error: 'Failed to generate recommendations' }, { status: 500 });
