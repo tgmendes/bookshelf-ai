@@ -1,0 +1,40 @@
+README.md
+  h_2620cc60cfd1e9 137,154-161
+docs/statuses-and-shelf-cover-checklist.md
+  h_2620cc60cfd1e9 1-19
+src/app/library/page.tsx
+  h_2620cc60cfd1e9 12,21
+src/components/BookControls.tsx
+  h_2620cc60cfd1e9 7,82
+src/components/BookDetails.tsx
+  h_2620cc60cfd1e9 3,6,21-22,24,29
+src/components/LibraryFilters.tsx
+  h_2620cc60cfd1e9 7,11-13
+src/lib/library/validation.ts
+  h_2620cc60cfd1e9 2,10,21,51,55
+src/lib/mcp/server.ts
+  h_2620cc60cfd1e9 12
+src/lib/types.ts
+  h_2620cc60cfd1e9 1-6
+tests/app-smoke.ts
+  h_2620cc60cfd1e9 96-112
+tests/dashboard.test.ts
+  h_2620cc60cfd1e9 49-57
+tests/reading-room.browser.spec.ts
+  h_2620cc60cfd1e9 455-511
+tests/reading-room.test.ts
+  h_2620cc60cfd1e9 96-109
+tests/validation.test.ts
+  h_2620cc60cfd1e9 27-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "69b715ebdb74b7d702c81d569732e9415f5ea9b7",
+  "prompts": {},
+  "humans": {
+    "h_2620cc60cfd1e9": {
+      "author": "tgmendes <tiago@speakeasy.com>"
+    }
+  }
+}
