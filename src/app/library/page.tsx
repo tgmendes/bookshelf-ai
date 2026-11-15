@@ -9,6 +9,7 @@ import { ReadingShelf } from '@/components/ReadingShelf';
 import { ReadingNow } from '@/components/ReadingNow';
 import { SavedRecommendations } from '@/components/SavedRecommendations';
 import { EmptyLibrary } from '@/components/EmptyLibrary';
+import { shelfValues } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
   const params = await searchParams;
   if (params.shelf === 'next-read') redirect('/library#next');
   const data = await getReadingData(userId);
-  const shelf = ['read', 'to-read', 'currently-reading', 'all'].includes(params.shelf ?? '') ? params.shelf! : 'read';
+  const shelf = [...shelfValues, 'all'].includes(params.shelf ?? '') ? params.shelf! : 'read';
   const visible = filterShelf(data.books, { ...params, shelf });
   const currentYear = new Date().getUTCFullYear();
   const stats = getReadingYear(data.books, currentYear, currentYear);

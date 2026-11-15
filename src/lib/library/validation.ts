@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { shelfValues } from '../types';
 
 const text = (max: number) => z.string().trim().min(1).max(max);
 const date = z.iso.date();
@@ -6,7 +7,7 @@ const url = z.url().max(2000).refine((value) => /^https?:\/\//.test(value), 'Use
 
 export const listInput = z.object({
   search: text(300).optional(),
-  shelf: z.enum(['read', 'currently-reading', 'to-read']).optional(),
+  shelf: z.enum(shelfValues).optional(),
   limit: z.number().int().min(1).max(100).default(50),
   offset: z.number().int().min(0).default(0),
 }).strict();
@@ -17,7 +18,7 @@ export const bookInput = z.object({
   author: text(300).optional(),
   goodreadsBookId: text(100).nullable().optional(),
   isbn13: z.string().regex(/^\d{13}$/).nullable().optional(),
-  shelf: z.enum(['read', 'currently-reading', 'to-read']).optional(),
+  shelf: z.enum(shelfValues).optional(),
   myRating: z.number().int().min(0).max(5).nullable().optional(),
   dateRead: date.nullable().optional(),
   dateStarted: date.nullable().optional(),
@@ -47,11 +48,11 @@ export type ListInput = z.infer<typeof listInput>;
 
 export const bookStateInput = z.object({
   myRating: z.number().int().min(0).max(5).optional(),
-  shelf: z.enum(['read', 'currently-reading', 'to-read']).optional(),
+  shelf: z.enum(shelfValues).optional(),
   effectiveDate: date.optional(),
 }).strict()
   .refine((value) => value.myRating !== undefined || value.shelf !== undefined, 'Supply a rating or status.')
-  .refine((value) => !value.shelf || value.shelf === 'to-read' || !!value.effectiveDate, 'Supply the date of this reading action.');
+  .refine((value) => (value.shelf !== 'read' && value.shelf !== 'currently-reading') || !!value.effectiveDate, 'Supply the date of this reading action.');
 
 export const startRecommendationInput = z.object({ date }).strict();
 export type BookStateInput = z.infer<typeof bookStateInput>;

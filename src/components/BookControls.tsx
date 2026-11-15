@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil } from 'lucide-react';
 import type { ReadingBook, Shelf } from '@/lib/types';
+import { shelfLabels } from '@/lib/types';
 import { getLocalDate } from '@/lib/library/dates';
 
 export function BookControls({ book }: { book: ReadingBook }) {
@@ -78,7 +79,7 @@ export function BookControls({ book }: { book: ReadingBook }) {
           </div>
           <div><label htmlFor={`${id}-shelf`} className="mb-1 block text-sm text-muted">Reading status</label>
             <select id={`${id}-shelf`} value={shelf} onChange={(event) => setShelf(event.target.value as Shelf)} className="min-h-11 w-full rounded-xl border border-border-strong bg-surface px-3 text-sm">
-              <option value="to-read">Want to read</option><option value="currently-reading">Reading</option><option value="read">Read</option>
+              {(['to-read', 'currently-reading', 'read', 'paused', 'abandoned'] as const).map((value) => <option key={value} value={value}>{shelfLabels[value]}</option>)}
             </select>
           </div>
         </div>

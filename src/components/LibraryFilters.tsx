@@ -4,10 +4,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Label } from '@/lib/types';
+import { shelfLabels } from '@/lib/types';
 
 const shelves = [
   { value: 'read', label: 'Read' }, { value: 'to-read', label: 'Want to read' },
-  { value: 'currently-reading', label: 'Reading' }, { value: 'all', label: 'All' },
+  { value: 'currently-reading', label: 'Reading' },
+  { value: 'paused', label: shelfLabels.paused }, { value: 'abandoned', label: shelfLabels.abandoned },
+  { value: 'all', label: 'All' },
 ];
 
 export function LibraryFilters({ labels = [], heading }: { labels?: Label[]; heading?: ReactNode }) {

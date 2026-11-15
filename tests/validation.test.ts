@@ -24,6 +24,14 @@ test('pagination is bounded and recommendation reasons are required', () => {
   assert.equal(recommendationInput.safeParse({ title: 'Dune', author: 'Frank Herbert', reason: ' ' }).success, false);
 });
 
+test('paused and abandoned can be saved and filtered without inventing reading dates', () => {
+  for (const shelf of ['paused', 'abandoned']) {
+    assert.deepEqual(bookStateInput.parse({ shelf }), { shelf });
+    assert.deepEqual(bookInput.parse({ shelf }), { shelf });
+    assert.equal(listInput.parse({ shelf }).shelf, shelf);
+  }
+});
+
 test('dashboard updates are narrow, bounded, and require an explicit date for reading actions', () => {
   assert.deepEqual(bookStateInput.parse({ myRating: 0 }), { myRating: 0 });
   assert.equal(bookStateInput.safeParse({ myRating: 6 }).success, false);

@@ -1,4 +1,9 @@
-export type Shelf = 'read' | 'currently-reading' | 'to-read';
+export const shelfValues = ['read', 'currently-reading', 'to-read', 'paused', 'abandoned'] as const;
+export type Shelf = typeof shelfValues[number];
+export const shelfLabels: Record<Shelf, string> = {
+  read: 'Read', 'currently-reading': 'Reading', 'to-read': 'Want to read',
+  paused: 'Paused', abandoned: 'Abandoned',
+};
 
 export interface Book {
   id: string;

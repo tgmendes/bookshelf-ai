@@ -46,6 +46,15 @@ test('dashboard edits and recommendation transitions preserve data and account i
     const reset = await owner.updateBookState(started.book.id, { myRating: 0, shelf: 'to-read' });
     assert.equal(reset.book.myRating, 0);
     assert.equal(reset.book.dateRead, date);
+    for (const shelf of ['paused', 'abandoned'] as const) {
+      const stopped = await owner.updateBookState(started.book.id, { shelf });
+      assert.equal(stopped.book.shelf, shelf);
+      assert.equal(stopped.book.dateStarted, date);
+      assert.equal(stopped.book.dateRead, date);
+      assert.equal(stopped.book.myRating, 0);
+      assert.equal((await owner.listBooks({ shelf, limit: 50, offset: 0 })).books[0].id, started.book.id);
+      await assert.rejects(other.updateBookState(started.book.id, { shelf }), /not found/);
+    }
     await assert.rejects(other.updateBookState(started.book.id, { myRating: 1 }), /not found/);
     await assert.rejects(owner.updateBookState(started.book.id, { myRating: 8 }));
 

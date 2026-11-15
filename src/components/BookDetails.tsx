@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import type { ReadingBook } from '@/lib/types';
+import { shelfLabels } from '@/lib/types';
 import { formatBookDate } from '@/lib/reading-room';
 import { BookControls } from './BookControls';
+import { BookCover } from './BookCover';
 
 export function BookMetadata({ book }: { book: Pick<ReadingBook, 'author' | 'yearPublished' | 'pages'> }) {
   return <p className="mt-1.5 text-muted">{[book.author, book.yearPublished, book.pages > 0 ? `${book.pages.toLocaleString('en-GB')} pages` : null].filter(Boolean).join(' · ')}</p>;
@@ -16,14 +18,15 @@ export function BookDetails({ book, fullPage = false }: { book: ReadingBook; ful
   const tags = [...new Set([...book.labels.map((label) => label.name), ...(book.bookshelves ?? [])])];
   const readDate = formatBookDate(book.dateRead, true);
   return (
-    <div className="grid min-w-0 grid-cols-1 gap-8 rounded-[20px] bg-surface p-6 sm:p-9 lg:grid-cols-2 lg:gap-10" data-testid="book-details">
+    <div className={`grid min-w-0 grid-cols-1 gap-8 rounded-[20px] bg-surface p-6 sm:p-9 lg:gap-10 ${fullPage ? 'lg:grid-cols-2' : 'lg:grid-cols-[180px_minmax(0,1fr)_minmax(0,1fr)]'}`} data-testid="book-details">
+      {!fullPage && <div className="flex justify-center lg:justify-start"><BookCover book={book} /></div>}
       <div className="min-w-0">
-        <p className="eyebrow text-accent">{book.shelf === 'read' ? (readDate ? `Read ${readDate}` : 'Read') : book.shelf === 'currently-reading' ? 'Reading now' : 'Want to read'}</p>
+        <p className="eyebrow text-accent">{book.shelf === 'read' ? (readDate ? `Read ${readDate}` : 'Read') : book.shelf === 'currently-reading' ? 'Reading now' : shelfLabels[book.shelf]}</p>
         <Heading className={`mt-2 break-words font-display font-light leading-[1.1] ${fullPage ? 'text-[44px]' : 'text-[38px]'}`}>{book.title}</Heading>
         <BookMetadata book={book} />
         {book.synopsis && <p className="mt-5 max-w-[52ch] whitespace-pre-line break-words text-base">{book.synopsis}</p>}
         {tags.length > 0 && <ul aria-label="Labels and shelves" className="mt-5 flex flex-wrap gap-2">{tags.map((tag) => <li key={tag} className="rounded-full bg-surface-2 px-3 py-1 text-[13px]">{tag}</li>)}</ul>}
-        {book.dateStarted && <p className="mt-5 text-sm text-muted">Reading since <time dateTime={book.dateStarted}>{formatBookDate(book.dateStarted, true)}</time></p>}
+        {book.dateStarted && <p className="mt-5 text-sm text-muted">{book.shelf === 'paused' || book.shelf === 'abandoned' ? 'Started' : 'Reading since'} <time dateTime={book.dateStarted}>{formatBookDate(book.dateStarted, true)}</time></p>}
       </div>
       <div className="min-w-0">
         <div className="flex flex-wrap gap-10">

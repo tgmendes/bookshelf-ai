@@ -134,7 +134,7 @@ Shelf headings display the actual year range represented by the filtered books.
 
 - **Edit rating & status** is available on book detail pages, selected shelf
   panels, and Reading now. Choose Unrated or 1–5 stars and Want to read, Reading,
-  or Read, then Save changes. Cancel does not write anything. Only changed
+  Read, Paused, or Abandoned, then Save changes. Cancel does not write anything. Only changed
   fields are submitted, so a rating correction does not overwrite other data.
 - **Start reading** appears on recommendation cards and detail pages. It reuses
   one exact case-insensitive title/author match or creates a book, preserving
@@ -150,6 +150,14 @@ these actions. Existing dates are kept. MCP edits still preserve omitted fields
 and never infer dates. Both interfaces read/write the same user-scoped records.
 Dashboard actions are session-authenticated and reject foreign-origin writes.
 No database schema migration is required for these controls.
+
+Paused means you intend to return to a book; Abandoned means you stopped without
+finishing. Both stay in the library and have their own shelf filters, but are
+excluded from Reading now and finished-book statistics. Existing dates, ratings,
+and notes are preserved; neither status creates reading dates. Resume by choosing
+Reading. MCP supports the same `paused` and `abandoned` shelf values.
+Selected shelf panels display the book cover, or the designed title/author
+fallback when there is no cover.
 
 ### Typical conversations
 

@@ -93,3 +93,17 @@ test('carousel neighbours wrap without duplicating the two-book case', () => {
   assert.equal(getCarouselOffset(0, 4, 5), 1);
   assert.deepEqual([0, 1, 2, 3, 4].map((index) => getCarouselOffset(index, 2, 5)), [-2, -1, 0, 1, 2]);
 });
+
+test('paused and abandoned stay filterable but are excluded from finished totals and Reading now', () => {
+  const books = [book('finished'), book('paused', { shelf: 'paused', dateStarted: '2026-01-01' }),
+    book('abandoned', { shelf: 'abandoned', dateStarted: '2026-01-01', dateRead: '2025-01-01' })];
+  assert.deepEqual(filterShelf(books, { shelf: 'paused' }).map((item) => item.id), ['paused']);
+  assert.deepEqual(filterShelf(books, { shelf: 'abandoned' }).map((item) => item.id), ['abandoned']);
+  assert.equal(filterShelf(books, { shelf: 'all' }).length, 3);
+  assert.deepEqual(getReadingNowBooks(books), []);
+  const stats = getReadingYear(books, 2026, 2026);
+  assert.equal(stats.totalBooks, 1);
+  assert.equal(stats.totalPages, 200);
+  assert.equal(stats.months.flatMap((month) => month.reading).length, 0);
+  assert.deepEqual(stats.years, [2026]);
+});

@@ -452,3 +452,60 @@ test('dashboard mutation endpoints reject invalid data, foreign accounts and cro
     expect(await database.db.select().from(schema.recommendations).where(eq(schema.recommendations.id, recId))).toHaveLength(1);
   } finally { await database.db.delete(schema.recommendations).where(eq(schema.recommendations.id, recId)); }
 });
+
+test('shelf details show the selected cover and the designed fallback', async ({ page }) => {
+  const { eq } = await import('drizzle-orm');
+  const coverUrl = 'https://covers.test/piranesi.svg';
+  await database.db.update(schema.books).set({ coverUrl }).where(eq(schema.books.id, editableBookId));
+  await page.route(coverUrl, (route) => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="270"><rect width="180" height="270" fill="#abc4a7"/></svg>' }));
+  try {
+    await page.goto('/library');
+    await page.getByRole('button', { name: 'Piranesi by Susanna Clarke', exact: true }).click();
+    const panel = page.locator('#selected-book');
+    const cover = panel.getByRole('img', { name: 'Piranesi cover', exact: true });
+    await expect(cover).toBeVisible();
+    await expect.poll(() => cover.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+    await page.screenshot({ path: `${artifacts}/selected-cover-dark-1280.png`, fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(cover).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+    await page.screenshot({ path: `${artifacts}/selected-cover-dark-390.png`, fullPage: true });
+    await page.getByRole('button', { name: 'Dune by Kazuo Ishiguro', exact: true }).click();
+    await expect(panel.locator('.cover-tile')).toBeVisible();
+    await expect(panel.locator('.cover-tile')).toContainText('Dune');
+    await expect(panel.locator('.cover-tile img')).toHaveCount(0);
+  } finally {
+    await database.db.update(schema.books).set({ coverUrl: null }).where(eq(schema.books.id, editableBookId));
+  }
+});
+
+test('paused and abandoned edits persist and can be filtered or resumed', async ({ page }) => {
+  const { eq } = await import('drizzle-orm');
+  const [original] = await database.db.select().from(schema.books).where(eq(schema.books.id, currentId));
+  try {
+    await page.goto(`/library/${currentId}`);
+    for (const [status, label] of [['paused', 'Paused'], ['abandoned', 'Abandoned']]) {
+      await page.getByTestId('book-details').getByRole('button', { name: 'Edit rating & status' }).click();
+      await page.getByRole('combobox', { name: 'Reading status' }).selectOption(status);
+      await page.getByRole('button', { name: 'Save changes' }).click();
+      await expect(page.getByTestId('book-details').getByText(label, { exact: true })).toBeVisible();
+      await page.goto(`/library?shelf=${status}`);
+      await expect(page.getByRole('button', { name: label, exact: true })).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('#selected-book').getByRole('heading')).toHaveText(original.title);
+      await expect(page.getByRole('heading', { level: 1 })).not.toHaveText(original.title);
+      const [saved] = await database.db.select().from(schema.books).where(eq(schema.books.id, currentId));
+      expect(saved.dateStarted).toBe(original.dateStarted);
+      expect(saved.dateRead).toBe(original.dateRead);
+      expect(saved.notes).toBe(original.notes);
+      expect(saved.myRating).toBe(original.myRating);
+      await page.goto(`/library/${currentId}`);
+    }
+    await page.getByRole('button', { name: 'Edit rating & status' }).click();
+    await page.getByRole('combobox', { name: 'Reading status' }).selectOption('currently-reading');
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByTestId('book-details').getByText('Reading now', { exact: true })).toBeVisible();
+  } finally {
+    await database.db.update(schema.books).set({ shelf: original.shelf, dateStarted: original.dateStarted, dateRead: original.dateRead, updatedAt: original.updatedAt }).where(eq(schema.books.id, currentId));
+  }
+});

@@ -93,6 +93,23 @@ async function main() {
     const retained = await status.json();
     assert.equal(retained.book.dateStarted, '2026-11-01');
     assert.equal(retained.book.dateRead, '2026-11-15');
+    for (const shelf of ['paused', 'abandoned']) {
+      const updated = await request(`/api/books/${savedData.book.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shelf }) });
+      assert.equal(updated.status, 200);
+      const mcpList = await client.callTool({ name: 'list_books', arguments: { shelf } });
+      assert.equal(mcpList.isError, undefined);
+      const listedBooks = JSON.parse((mcpList.content as Array<{ text: string }>)[0].text).books;
+      assert.equal(listedBooks.length, 1);
+      assert.equal(listedBooks[0].id, savedData.book.id);
+      assert.equal(listedBooks[0].shelf, shelf);
+      assert.equal(listedBooks[0].dateStarted, '2026-11-01');
+      assert.equal(listedBooks[0].dateRead, '2026-11-15');
+      assert.equal(listedBooks[0].myRating, 5);
+      const mcpSave = await client.callTool({ name: 'save_book', arguments: { id: savedData.book.id, shelf } });
+      assert.equal(mcpSave.isError, undefined);
+      const updatedPage = await request(`/library/${savedData.book.id}`);
+      assert.match(await updatedPage.text(), new RegExp(shelf === 'paused' ? 'Paused' : 'Abandoned'));
+    }
     const started = await request(`/api/recommendations/${recData.recommendation.id}/start-reading`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: '2026-11-15' }) });
     assert.equal(started.status, 200);
     const startedData = await started.json();
