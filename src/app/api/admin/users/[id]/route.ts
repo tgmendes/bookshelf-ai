@@ -15,7 +15,6 @@ export async function PATCH(
   const body = await request.json();
 
   const updates: Record<string, unknown> = {};
-  if (typeof body.aiUnlimited === 'boolean') updates.aiUnlimited = body.aiUnlimited;
   if (body.role === 'user' || body.role === 'admin') updates.role = body.role;
 
   if (Object.keys(updates).length === 0) {
@@ -26,7 +25,7 @@ export async function PATCH(
     .update(users)
     .set(updates)
     .where(eq(users.id, id))
-    .returning({ id: users.id, role: users.role, aiUnlimited: users.aiUnlimited });
+    .returning({ id: users.id, role: users.role });
 
   if (!updated) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });

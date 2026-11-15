@@ -20,7 +20,7 @@ export async function fetchFromOpenLibrary(
     const query = encodeURIComponent(`${title} ${author}`);
     const searchUrl = `https://openlibrary.org/search.json?q=${query}&limit=1`;
 
-    const res = await fetch(searchUrl, { next: { revalidate: 3600 } });
+    const res = await fetch(searchUrl, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(10000) });
     if (!res.ok) return { coverUrl: null, synopsis: null };
 
     const data = await res.json();
@@ -40,6 +40,7 @@ export async function fetchFromOpenLibrary(
       try {
         const workRes = await fetch(`https://openlibrary.org${workKey}.json`, {
           next: { revalidate: 3600 },
+          signal: AbortSignal.timeout(10000),
         });
         if (workRes.ok) {
           const workData = await workRes.json();

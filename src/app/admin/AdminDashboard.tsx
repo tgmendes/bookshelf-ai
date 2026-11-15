@@ -8,9 +8,7 @@ interface AdminUser {
   email: string;
   name: string | null;
   role: string;
-  aiUnlimited: boolean;
   createdAt: string | null;
-  aiUsageToday: number;
 }
 
 interface Props {
@@ -25,23 +23,7 @@ export function AdminDashboard({ initialUsers, initialConfig }: Props) {
     config.allowed_emails?.split(',').map((e) => e.trim()).filter(Boolean) ?? []
   );
   const [newEmail, setNewEmail] = useState('');
-  const [dailyLimit, setDailyLimit] = useState(config.ai_daily_limit ?? '20');
   const [saving, setSaving] = useState<string | null>(null);
-
-  async function toggleUnlimited(userId: string, current: boolean) {
-    setSaving(userId);
-    const res = await fetch(`/api/admin/users/${userId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ aiUnlimited: !current }),
-    });
-    if (res.ok) {
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, aiUnlimited: !current } : u))
-      );
-    }
-    setSaving(null);
-  }
 
   async function toggleRole(userId: string, current: string) {
     const newRole = current === 'admin' ? 'user' : 'admin';
@@ -60,7 +42,7 @@ export function AdminDashboard({ initialUsers, initialConfig }: Props) {
   }
 
   async function revokeUser(userId: string) {
-    if (!confirm('Revoke all sessions for this user?')) return;
+    if (!confirm('Revoke all browser sessions and assistant tokens for this user?')) return;
     setSaving(userId);
     await fetch(`/api/admin/users/${userId}/revoke`, { method: 'POST' });
     setSaving(null);
@@ -91,17 +73,6 @@ export function AdminDashboard({ initialUsers, initialConfig }: Props) {
     await saveAllowedEmails(updated);
   }
 
-  async function saveDailyLimit() {
-    setSaving('limit');
-    await fetch('/api/admin/config', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'ai_daily_limit', value: dailyLimit }),
-    });
-    setConfig((prev) => ({ ...prev, ai_daily_limit: dailyLimit }));
-    setSaving(null);
-  }
-
   const inputClass =
     'w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30';
   const btnClass =
@@ -121,8 +92,6 @@ export function AdminDashboard({ initialUsers, initialConfig }: Props) {
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Joined</th>
-                <th className="px-4 py-3 font-medium text-center">AI Today</th>
-                <th className="px-4 py-3 font-medium text-center">Unlimited</th>
                 <th className="px-4 py-3 font-medium text-center">Admin</th>
                 <th className="px-4 py-3 font-medium text-center">Actions</th>
               </tr>
@@ -134,22 +103,6 @@ export function AdminDashboard({ initialUsers, initialConfig }: Props) {
                   <td className="px-4 py-3">{u.name ?? '—'}</td>
                   <td className="px-4 py-3 text-muted">
                     {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-center">{u.aiUsageToday}</td>
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      onClick={() => toggleUnlimited(u.id, u.aiUnlimited)}
-                      disabled={saving === u.id}
-                      className={`inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        u.aiUnlimited ? 'bg-primary' : 'bg-border'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
-                          u.aiUnlimited ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button
@@ -171,7 +124,7 @@ export function AdminDashboard({ initialUsers, initialConfig }: Props) {
                       onClick={() => revokeUser(u.id)}
                       disabled={saving === u.id}
                       className={ghostBtn}
-                      title="Revoke sessions"
+                      title="Revoke sessions and assistant tokens"
                     >
                       Revoke
                     </button>
@@ -222,29 +175,6 @@ export function AdminDashboard({ initialUsers, initialConfig }: Props) {
         </div>
       </section>
 
-      {/* Settings */}
-      <section>
-        <h2 className="font-display text-xl mb-4">Settings</h2>
-        <div className="flex items-end gap-3 max-w-xs">
-          <div className="flex-1">
-            <label className="block text-sm text-muted mb-1">AI Daily Limit</label>
-            <input
-              type="number"
-              value={dailyLimit}
-              onChange={(e) => setDailyLimit(e.target.value)}
-              className={inputClass}
-              min={1}
-            />
-          </div>
-          <button
-            onClick={saveDailyLimit}
-            disabled={saving === 'limit'}
-            className={primaryBtn}
-          >
-            Save
-          </button>
-        </div>
-      </section>
     </div>
   );
 }

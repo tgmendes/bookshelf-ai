@@ -21,8 +21,6 @@ export const config = {
     '/settings/:path*',
     '/next-read/:path*',
     '/api/books/:path*',
-    '/api/chat/:path*',
-    '/api/discover/:path*',
     '/api/recommendations/:path*',
   ],
 };

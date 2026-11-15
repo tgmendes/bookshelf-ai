@@ -1,13 +1,10 @@
 import { db } from '@/lib/db';
-import { users, aiUsage, siteConfig } from '@/lib/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { users, siteConfig } from '@/lib/db/schema';
 import { requireAdmin } from '@/lib/auth/requireAdmin';
 import { AdminDashboard } from './AdminDashboard';
 
 export default async function AdminPage() {
   await requireAdmin();
-
-  const today = new Date().toISOString().slice(0, 10);
 
   const userRows = await db
     .select({
@@ -15,9 +12,7 @@ export default async function AdminPage() {
       email: users.email,
       name: users.name,
       role: users.role,
-      aiUnlimited: users.aiUnlimited,
       createdAt: users.createdAt,
-      aiUsageToday: sql<number>`coalesce((select ${aiUsage.count} from ${aiUsage} where ${aiUsage.userId} = ${users.id} and ${aiUsage.date} = ${today}), 0)`,
     })
     .from(users)
     .orderBy(users.createdAt);

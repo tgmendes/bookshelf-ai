@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { sessions } from '@/lib/db/schema';
+import { sessions, apiTokens } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { requireApiAdmin } from '@/lib/auth/requireApiAdmin';
 
@@ -13,7 +13,10 @@ export async function POST(
 
   const { id } = await params;
 
-  await db.delete(sessions).where(eq(sessions.userId, id));
+  await db.transaction(async (tx) => {
+    await tx.delete(sessions).where(eq(sessions.userId, id));
+    await tx.delete(apiTokens).where(eq(apiTokens.userId, id));
+  });
 
   return NextResponse.json({ ok: true });
 }

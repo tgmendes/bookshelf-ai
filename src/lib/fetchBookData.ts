@@ -9,7 +9,7 @@ async function fetchFromGoogleBooks(
     const encodedAuthor = encodeURIComponent(author);
     const url = `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodedTitle}+inauthor:${encodedAuthor}&maxResults=1`;
 
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const res = await fetch(url, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(10000) });
     if (!res.ok) {
       return { coverUrl: null, synopsis: null, avgRating: null };
     }

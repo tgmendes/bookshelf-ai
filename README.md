@@ -1,36 +1,140 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OpenShelf
 
-## Getting Started
+A reading database with an MCP interface and a browsing UI. Your external
+assistant manages books, ratings, reading dates, personal notes, and saved
+recommendations. OpenShelf does not run an LLM or upload CSV files.
 
-First, run the development server:
+## Run locally
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Use Node 22. Copy `.env.local.example` to `.env.local` and configure email
+sign-in. With mise installed:
+
+```sh
+npm ci
+mise run docker:up
+mise run db:push
+mise run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Without mise, set `DATABASE_URL` yourself and use the corresponding npm scripts.
+The local Docker database uses port 5433. `NEXT_PUBLIC_APP_URL` must be your
+application's canonical URL; use HTTPS for remote deployments.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Upgrading an existing installation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Back up the database, then apply `npm run db:push` with the intended
+`DATABASE_URL` **before deploying** this code. The additive schema changes are:
 
-## Learn More
+- `books.notes`: optional personal reading notes.
+- `recommendations.source`: optional attribution for a recommendation.
+- `api_tokens`: per-user connection names, public prefixes, SHA-256 token hashes,
+  and creation dates. Plaintext tokens are never stored.
 
-To learn more about Next.js, take a look at the following resources:
+Existing books, recommendations, labels, and sign-ins are preserved. Legacy AI
+tables and account columns remain in the schema to avoid deleting historical
+data; they are unused. The chat, discovery, similar-book, label-suggestion, and
+CSV import endpoints and their UI have been removed. `/discover` now redirects
+to saved recommendations.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Connect an assistant
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Sign in to OpenShelf and open **Connections**.
+2. Create a named access token. Save it immediately; it is shown only once.
+3. In your MCP client's secure connection settings, add:
+   - Transport: **Streamable HTTP**
+   - URL: `https://YOUR_HOST/api/mcp`
+   - Header: `Authorization: Bearer YOUR_TOKEN`
 
-## Deploy on Vercel
+The client must support custom Authorization headers. This release does not
+provide OAuth discovery/authorization, so OAuth-only connectors cannot connect.
+It uses stateless JSON responses and requires no sticky sessions or persistent
+server process. GET event streams and DELETE sessions are not supported.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Keep tokens out of chat transcripts, source control, and URLs. Each token grants
+read/write access to **only its owner's** books and recommendations, not admin
+access. Tokens do not expire automatically. Create one per client and revoke
+unused tokens in Connections. Revocation blocks subsequent requests; it cannot
+cancel a request already authenticated and in progress. Admin **Revoke** also
+removes that user's assistant tokens, in addition to browser sessions.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### MCP tools
+
+| Tool | Purpose |
+| --- | --- |
+| `list_books` | Paginated search by title/author and shelf; includes ratings, dates, notes, and tags |
+| `get_book` | One book and its assigned labels |
+| `lookup_book_metadata` | Look up a cover, synopsis, and community rating without changing stored data |
+| `save_book` | Add a book or update supplied fields by ID |
+| `list_recommendations` | Paginated saved recommendations, reasons, and sources |
+| `save_recommendation` | Save or revise a recommendation with its reason |
+| `remove_recommendation` | Delete a saved recommendation when requested |
+
+Read tools use `limit` (1–100) and `offset`; follow `nextOffset` until it is null
+to read the whole collection. Metadata lookup sends the supplied title/author to
+Google Books and Open Library, may return incomplete or incorrect edition data,
+and never invents a rating or personal opinion.
+
+`save_book` requires title and author for a new book. Use the returned ID for
+later updates. Without an ID it matches ISBN, Goodreads ID, or exact
+case-insensitive title + author within the current account. Ambiguous matches
+require an explicit ID. Concurrent saves for an account are serialized to avoid
+duplicate inserts. Existing duplicate records are not merged automatically.
+
+Omitted fields stay unchanged; `null` clears an optional field. Ratings are
+integers from 0–5, where 0 is unrated. Shelves are `read`, `currently-reading`,
+and `to-read`. Dates use `YYYY-MM-DD`. Finishing a book does not guess its rating
+or date. Personal tags use `bookshelves`; existing color labels remain visible
+and readable, but are not managed through these MCP tools.
+
+Recommendations are separate from reading history. Saving or finishing a book
+does not automatically delete its recommendation. The assistant can remove it
+if asked.
+
+### Typical conversations
+
+- “I finished Dune.” The assistant finds the book, asks for missing rating/date
+  and optional thoughts, then updates the record.
+- “Read my library and suggest three books.” The assistant reads your history,
+  generates recommendations itself, and saves the ones you want to keep.
+- “Here is my Goodreads CSV; add it to OpenShelf.” The assistant parses the file
+  and saves each row through `save_book`, preserving identifiers and supplied
+  dates. There is no CSV-specific tool, atomic bulk import, or Kindle sync.
+
+## Verify
+
+```sh
+npm test
+npm run typecheck
+npm run build
+```
+
+Database integration tests are skipped unless `TEST_DATABASE_URL` is set. Point
+it at a disposable database whose name ends in `_test`, initialize that database
+with `DATABASE_URL=... npm run db:push`, then run:
+
+```sh
+TEST_DATABASE_URL=postgresql://.../openshelf_test npm test
+```
+
+For a running app backed by that same disposable database, the HTTP smoke check
+also exercises real MCP calls, token creation/revocation, and rendered library
+and recommendation pages:
+
+```sh
+TEST_DATABASE_URL=postgresql://.../openshelf_test TEST_APP_URL=http://localhost:3105 npx tsx tests/app-smoke.ts
+```
+
+### Dependency security
+
+Next.js is pinned to 16.4.6; Drizzle ORM, Resend, and Zod use patched releases.
+The lockfile also updates affected transitive dependencies. Both `npm audit`
+and `npm audit --omit=dev` report zero known vulnerabilities at verification.
+
+An override pins esbuild to 0.25.12 only inside `@esbuild-kit/core-utils`, a
+legacy loader still pulled in by Drizzle Kit. It fixes GHSA-67mh-4wv8-2f99
+without npm's proposed breaking Drizzle Kit downgrade. A regression test checks
+the actual resolved version and both TypeScript transformation paths. Remove
+the override once Drizzle Kit no longer needs the vulnerable dependency.
+
+Run `npm audit` regularly: a clean audit covers known package advisories, not a
+complete security assessment of the application.

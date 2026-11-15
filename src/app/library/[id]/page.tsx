@@ -5,11 +5,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import { getCoverGradient } from '@/lib/coverGradients';
-import { FetchSingleCoverButton } from '@/components/FetchSingleCoverButton';
-import { SimilarBooks } from '@/components/SimilarBooks';
-import { BookLabels } from '@/components/BookLabels';
-import { BookStatusEditor } from '@/components/BookStatusEditor';
-import type { Shelf, Label } from '@/lib/types';
+import { StarRating } from '@/components/StarRating';
+import type { Label } from '@/lib/types';
 import { requireUser } from '@/lib/auth/requireUser';
 
 export const dynamic = 'force-dynamic';
@@ -38,6 +35,8 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
     bookshelves: string[] | null;
     coverUrl: string | null;
     synopsis: string | null;
+    notes?: string | null;
+    source?: string | null;
     isRecommendation?: boolean;
     reason?: string;
   } | null = null;
@@ -64,6 +63,7 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
         bookshelves: r.bookshelves,
         coverUrl: r.coverUrl ?? null,
         synopsis: r.synopsis ?? null,
+        notes: r.notes,
       };
     }
   }
@@ -92,6 +92,7 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
         synopsis: r.synopsis ?? null,
         isRecommendation: true,
         reason: r.reason,
+        source: r.source,
       };
     }
   }
@@ -161,11 +162,6 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
               </div>
             )}
           </div>
-          {!book.isRecommendation && (
-            <div className="mt-3 text-center">
-              <FetchSingleCoverButton bookId={book.id} hasCover={!!book.coverUrl} />
-            </div>
-          )}
         </div>
 
         {/* Details */}
@@ -179,7 +175,7 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
           <div className="flex flex-wrap gap-2 mb-6">
             {book.isRecommendation && (
               <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary-light text-primary">
-                AI Recommended
+                Recommended{book.source ? ` · ${book.source}` : ''}
               </span>
             )}
             {book.pages > 0 && (
@@ -194,14 +190,11 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
             )}
           </div>
 
-          {/* Editable shelf + rating (library books only) */}
+          {/* Reading history is managed by the connected assistant. */}
           {!book.isRecommendation && (
             <div className="mb-6">
-              <BookStatusEditor
-                bookId={book.id}
-                initialShelf={book.shelf}
-                initialRating={book.myRating}
-              />
+              <p className="text-sm text-muted mb-2">{book.shelf === 'read' ? 'Read' : book.shelf === 'currently-reading' ? 'Currently reading' : 'Want to read'}</p>
+              <StarRating rating={book.myRating} />
             </div>
           )}
 
@@ -222,6 +215,12 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
           )}
 
           {/* Synopsis */}
+          {book.notes && (
+            <div className="mb-6">
+              <h2 className="font-display text-xl text-foreground mb-2">My thoughts</h2>
+              <p className="text-sm text-muted leading-relaxed whitespace-pre-wrap">{book.notes}</p>
+            </div>
+          )}
           {book.synopsis && (
             <div className="mb-6">
               <h2 className="font-display text-xl text-foreground mb-2">Synopsis</h2>
@@ -252,17 +251,15 @@ export default async function BookDetailPage({ params, searchParams }: Props) {
           )}
 
           {/* Labels */}
-          {!book.isRecommendation && (
+          {bookLabelList.length > 0 && (
             <div className="mb-6">
-              <BookLabels bookId={book.id} initialLabels={bookLabelList} />
+              <h2 className="font-display text-xl text-foreground mb-2">Labels</h2>
+              <div className="flex flex-wrap gap-2">{bookLabelList.map((label) => (
+                <span key={label.id} className="px-2.5 py-1 text-xs rounded-full text-white" style={{ backgroundColor: label.color }}>{label.name}</span>
+              ))}</div>
             </div>
           )}
         </div>
-      </div>
-
-      {/* AI Similar Books */}
-      <div className="mt-12 animate-fade-in-up stagger-4">
-        <SimilarBooks bookId={book.id} />
       </div>
 
       {/* Other books by same author */}

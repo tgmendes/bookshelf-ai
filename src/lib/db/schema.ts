@@ -46,12 +46,14 @@ export const books = pgTable('books', {
   bookshelves: text('bookshelves').array(),
   coverUrl: text('cover_url'),
   synopsis: text('synopsis'),
+  notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 }, (t) => [
   unique('books_goodreads_user_unique').on(t.goodreadsBookId, t.userId),
 ]);
 
+// Legacy AI data is retained for compatibility; there are no active AI endpoints.
 export const chatMessages = pgTable('chat_messages', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id),
@@ -77,6 +79,7 @@ export const recommendations = pgTable('recommendations', {
   reason: text('reason').notNull(),
   coverUrl: text('cover_url'),
   synopsis: text('synopsis'),
+  source: text('source'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -114,4 +117,13 @@ export const siteConfig = pgTable('site_config', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
   updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const apiTokens = pgTable('api_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
+  prefix: text('prefix').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });

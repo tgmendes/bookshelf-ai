@@ -2,7 +2,6 @@ import Link from 'next/link';
 import type { Book } from '@/lib/types';
 import { BookOpen, Star } from 'lucide-react';
 import { getCoverGradient } from '@/lib/coverGradients';
-import { FetchCoverOverlay } from './FetchCoverOverlay';
 
 interface BookCardProps {
   book: Book;
@@ -31,11 +30,6 @@ export function BookCard({ book, labelColors }: BookCardProps) {
           )}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
         </Link>
-
-        {/* Fetch cover button for books without a cover */}
-        {!book.coverUrl && !book.isRecommendation && (
-          <FetchCoverOverlay bookId={book.id} />
-        )}
 
         {/* Label dots */}
         {labelColors && labelColors.length > 0 && (

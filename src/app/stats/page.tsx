@@ -74,7 +74,7 @@ export default async function StatsPage() {
             <BarChart2 className="w-8 h-8 text-primary" />
           </div>
           <h2 className="font-display text-2xl text-foreground mb-2">No reading data yet</h2>
-          <p>Import your Goodreads library to see your reading stats come to life.</p>
+          <p>Ask your connected assistant to add the books you&apos;ve read. Your stats will appear here.</p>
         </div>
       ) : (
         <>

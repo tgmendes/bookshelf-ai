@@ -2,15 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookOpen, BarChart2, Settings, Library, Menu, X, LogOut, Shield, Sparkles } from 'lucide-react';
+import { BookOpen, BarChart2, Plug, Library, Menu, X, LogOut, Shield } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useState, useEffect } from 'react';
 
 const links = [
   { href: '/library', label: 'Library', icon: Library },
-  { href: '/discover', label: 'Discover', icon: Sparkles },
   { href: '/stats', label: 'Stats', icon: BarChart2 },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/settings', label: 'Connections', icon: Plug },
 ];
 
 export function Nav({ isAdmin }: { isAdmin?: boolean }) {
@@ -43,7 +42,7 @@ export function Nav({ isAdmin }: { isAdmin?: boolean }) {
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <BookOpen className="w-4 h-4 text-white" />
           </div>
-          <span className="font-display text-lg">Bookshelf</span>
+          <span className="font-display text-lg">OpenShelf</span>
         </Link>
 
         {/* Desktop links */}

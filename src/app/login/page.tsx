@@ -22,7 +22,7 @@ export default async function LoginPage() {
             <BookOpen className="w-7 h-7 text-white" />
           </div>
           <h1 className="font-display text-4xl text-foreground tracking-tight mb-2">
-            Sign in to Bookshelf
+            Sign in to OpenShelf
           </h1>
           <p className="text-muted text-sm">
             Enter your email and we&apos;ll send you a magic link

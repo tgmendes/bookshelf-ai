@@ -1,12 +1,5 @@
-import { requireUser } from '@/lib/auth/requireUser';
-import { DiscoverInterface } from '@/components/DiscoverInterface';
+import { redirect } from 'next/navigation';
 
-export const metadata = {
-  title: 'Discover — Bookshelf',
-};
-
-export default async function DiscoverPage() {
-  await requireUser();
-
-  return <DiscoverInterface />;
+export default function DiscoverPage() {
+  redirect('/library?shelf=next-read');
 }

@@ -3,7 +3,7 @@ import { books, recommendations, bookLabels, labels } from '@/lib/db/schema';
 import { BookCard } from '@/components/BookCard';
 import { LibraryFilters } from '@/components/LibraryFilters';
 import { EmptyLibrary } from '@/components/EmptyLibrary';
-import { AddBookButton } from '@/components/AddBookButton';
+import Link from 'next/link';
 import { Suspense } from 'react';
 import { asc, desc, ilike, eq, or, and, count, inArray } from 'drizzle-orm';
 import type { Book, Shelf, Label } from '@/lib/types';
@@ -139,7 +139,7 @@ async function LibraryGrid({ searchParams, userId, hasBooks }: { searchParams: S
 
       {allBooks.length === 0 ? (
         <div className="text-center py-20 text-muted">
-          <p>{isNextRead ? 'No saved recommendations yet. Chat with the AI to get book suggestions.' : 'No books found. Try adjusting your filters.'}</p>
+          <p>{isNextRead ? 'No recommendations yet. Ask your connected assistant to save some suggestions.' : 'No books found. Try adjusting your filters.'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -178,14 +178,12 @@ export default async function LibraryPage({
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-2 animate-fade-in">
         <h1 className="font-display text-4xl text-foreground">My Library</h1>
-        {hasBooks && <AddBookButton />}
+        <Link href="/settings" className="text-sm text-primary hover:underline">Assistant connections</Link>
       </div>
-      {hasBooks && <p className="text-muted mb-6">Browse and manage your book collection</p>}
-      {hasBooks && (
-        <Suspense fallback={<div />}>
-          <LibraryFilters labels={userLabels} hasBooks={hasBooks} />
-        </Suspense>
-      )}
+      <p className="text-muted mb-6">Your books and recommendations, curated with your assistant.</p>
+      <Suspense fallback={<div />}>
+        <LibraryFilters labels={userLabels} />
+      </Suspense>
       <Suspense fallback={<div className="text-muted py-8 text-center">Loading…</div>}>
         <LibraryGrid searchParams={params} userId={userId} hasBooks={hasBooks} />
       </Suspense>
