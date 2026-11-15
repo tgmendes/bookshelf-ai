@@ -1,0 +1,54 @@
+CLAUDE.md
+  h_2620cc60cfd1e9 3-8,30-33,51-56
+README.md
+  h_2620cc60cfd1e9 5-6,101-102,106,133-153
+docs/dashboard-controls-checklist.md
+  h_2620cc60cfd1e9 1-23
+src/app/api/books/[id]/route.ts
+  h_2620cc60cfd1e9 1,3-5,7,10-11,13-15,17-20
+src/app/api/recommendations/[id]/route.ts
+  h_2620cc60cfd1e9 1,3-4,6,9-12,14-17
+src/app/api/recommendations/[id]/start-reading/route.ts
+  h_2620cc60cfd1e9 1-22
+src/app/library/[id]/page.tsx
+  h_2620cc60cfd1e9 9,31
+src/components/BookControls.tsx
+  h_2620cc60cfd1e9 1-94
+src/components/BookDetails.tsx
+  h_2620cc60cfd1e9 4,33
+src/components/McpConnections.tsx
+  h_2620cc60cfd1e9 102,104
+src/components/ReadingNow.tsx
+  h_2620cc60cfd1e9 10,95,102
+src/components/RecommendationActions.tsx
+  h_2620cc60cfd1e9 1-66
+src/components/SavedRecommendations.tsx
+  h_2620cc60cfd1e9 5,19
+src/lib/library/dates.ts
+  h_2620cc60cfd1e9 1-3
+src/lib/library/http.ts
+  h_2620cc60cfd1e9 1-20
+src/lib/library/service.ts
+  h_2620cc60cfd1e9 4-8,16-54,136-142
+src/lib/library/validation.ts
+  h_2620cc60cfd1e9 47-58
+tests/app-smoke.ts
+  h_2620cc60cfd1e9 60-63,91-107,112
+tests/dashboard.test.ts
+  h_2620cc60cfd1e9 1-84
+tests/reading-room.browser.spec.ts
+  h_2620cc60cfd1e9 15,21,40,47,186,292-454
+tests/validation.test.ts
+  h_2620cc60cfd1e9 3,26-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4398b100616847d38dc04255eaf6085ffa04438a",
+  "prompts": {},
+  "humans": {
+    "h_2620cc60cfd1e9": {
+      "author": "tgmendes <tiago@speakeasy.com>"
+    }
+  }
+}
