@@ -1,0 +1,30 @@
+README.md
+  h_2620cc60cfd1e9 109-115
+docs/reading-now-carousel-checklist.md
+  h_2620cc60cfd1e9 1-22
+src/app/globals.css
+  h_2620cc60cfd1e9 93-98,101
+src/app/library/page.tsx
+  h_2620cc60cfd1e9 6,29
+src/components/BookCover.tsx
+  h_2620cc60cfd1e9 5,13
+src/components/ReadingNow.tsx
+  h_2620cc60cfd1e9 1-2,4-5,7,12-61,63,65-85,87-92,94-109
+src/lib/reading-room.ts
+  h_2620cc60cfd1e9 5-16
+tests/reading-room.browser.spec.ts
+  h_2620cc60cfd1e9 11-12,40-41,177-288
+tests/reading-room.test.ts
+  h_2620cc60cfd1e9 4,74-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b099bada0286d76720328652462544349ba3b73a",
+  "prompts": {},
+  "humans": {
+    "h_2620cc60cfd1e9": {
+      "author": "tgmendes <tiago@speakeasy.com>"
+    }
+  }
+}
