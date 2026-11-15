@@ -12,11 +12,13 @@ const secondReadingId = randomUUID();
 const thirdReadingId = randomUUID();
 const olderId = randomUUID();
 const otherId = randomUUID();
+const foreignBookId = randomUUID();
 const labelId = randomUUID();
 const year = new Date().getUTCFullYear();
 const artifacts = resolve('test-results/reading-room');
 let database: typeof import('../src/lib/db');
 let schema: typeof import('../src/lib/db/schema');
+let editableBookId: string;
 
 test.beforeAll(async ({ browser }) => {
   const url = process.env.TEST_DATABASE_URL;
@@ -35,13 +37,14 @@ test.beforeAll(async ({ browser }) => {
     dateAdded: `${year}-01-01`, shelf: 'read', dateRead: `${year}-${String(index % 10 + 1).padStart(2, '0')}-14`, yearPublished: 2020,
     synopsis: 'A story of strange worlds, quiet discoveries, and the things we carry home.', notes: 'Read it in two sittings. The reveal lands because the voice is so gentle.',
   }))).returning({ id: books.id });
+  editableBookId = rows[0].id;
   await db.insert(books).values([
     { id: currentId, userId, title: 'The Dispossessed', author: 'Ursula K. Le Guin', shelf: 'currently-reading', pages: 387, yearPublished: 1974, dateAdded: `${year}-11-03`, dateStarted: `${year}-11-03`, notes: 'Shevek’s two worlds keep arguing in my head. Anarres feels less like utopia every chapter, and I think that’s the point.' },
     { id: secondReadingId, userId, title: 'The Waves', author: 'Virginia Woolf', shelf: 'currently-reading', pages: 240, dateAdded: `${year}-10-01`, dateStarted: `${year}-11-10`, notes: 'A second reading note.' },
     { id: thirdReadingId, userId, title: 'The Odyssey', author: 'Homer', shelf: 'currently-reading', pages: 400, dateAdded: `${year}-09-01`, dateStarted: null, notes: null },
     { id: olderId, userId, title: 'Last year’s book', author: 'Another Author', shelf: 'read', myRating: 5, dateAdded: `${year - 1}-01-01`, dateRead: `${year - 1}-01-01` },
     { userId, title: 'A book for later', author: 'Future Author', shelf: 'to-read', dateAdded: `${year}-01-01` },
-    { userId: otherId, title: 'Private other-account book', author: 'Hidden', shelf: 'read', dateAdded: `${year}-01-01`, dateRead: `${year}-10-14`, myRating: 5 },
+    { id: foreignBookId, userId: otherId, title: 'Private other-account book', author: 'Hidden', shelf: 'read', dateAdded: `${year}-01-01`, dateRead: `${year}-10-14`, myRating: 5 },
   ]);
   await db.insert(labels).values({ id: labelId, userId, name: 'favourites', color: '#B6ADCF' });
   await db.insert(bookLabels).values({ bookId: rows[0].id, labelId });
@@ -180,7 +183,7 @@ test('Reading now carousel follows date added, selects neighbours, wraps and sup
   const carousel = page.getByRole('region', { name: 'Reading now', exact: true });
   await expect(carousel.getByRole('heading', { level: 1 })).toHaveText('The Dispossessed');
   await expect(carousel.getByRole('button', { name: 'Show The Dispossessed by Ursula K. Le Guin' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(carousel.getByRole('status')).toContainText('Book 1 of 3');
+  await expect(carousel.getByRole('status', { name: 'Reading position' })).toContainText('Book 1 of 3');
   await page.getByRole('button', { name: 'Next reading book' }).click();
   await expect(carousel.getByRole('heading', { level: 1 })).toHaveText('The Waves');
   await expect(carousel.getByText('A second reading note.', { exact: false })).toBeVisible();
@@ -285,4 +288,167 @@ test('many reading books stay bounded and keyboard jumps focus previously hidden
   } finally {
     await database.db.delete(schema.books).where(inArray(schema.books.id, ids));
   }
+});
+
+test('book rating and status can be edited, cleared and cancelled without losing notes or dates', async ({ page }) => {
+  const { eq } = await import('drizzle-orm');
+  const { db } = database;
+  const [original] = await db.select().from(schema.books).where(eq(schema.books.id, editableBookId));
+  try {
+    await page.goto(`/library/${editableBookId}`);
+    const detail = page.getByTestId('book-details');
+    const edit = detail.getByRole('button', { name: 'Edit rating & status' });
+    await edit.click();
+    const form = page.getByRole('form', { name: 'Edit Piranesi', exact: true });
+    await expect(form.getByRole('combobox', { name: 'Your rating' })).toBeFocused();
+    await form.getByRole('combobox', { name: 'Your rating' }).selectOption('5');
+    await form.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(edit).toBeFocused();
+    expect((await db.select().from(schema.books).where(eq(schema.books.id, editableBookId)))[0].myRating).toBe(original.myRating);
+    await edit.click();
+    await form.getByRole('combobox', { name: 'Your rating' }).selectOption('4');
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    await expect(detail.locator('[aria-label="4 of 5 stars"]')).toBeVisible();
+    const saved = (await db.select().from(schema.books).where(eq(schema.books.id, editableBookId)))[0];
+    expect(saved.shelf).toBe(original.shelf);
+    expect(saved.dateRead).toBe(original.dateRead);
+    expect(saved.notes).toBe(original.notes);
+    await edit.click();
+    await form.getByRole('combobox', { name: 'Your rating' }).selectOption('0');
+    await form.getByRole('combobox', { name: 'Reading status' }).selectOption('currently-reading');
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    await expect(detail.getByText('Reading now', { exact: true })).toBeVisible();
+    await expect(detail.getByText('Unrated', { exact: true })).toBeVisible();
+    const reading = (await db.select().from(schema.books).where(eq(schema.books.id, editableBookId)))[0];
+    expect(reading.dateStarted).not.toBeNull();
+    expect(reading.dateRead).toBe(original.dateRead);
+    await edit.click();
+    await form.getByRole('combobox', { name: 'Reading status' }).selectOption('to-read');
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    await expect(detail.getByText('Want to read', { exact: true })).toBeVisible();
+  } finally {
+    await db.update(schema.books).set({ myRating: original.myRating, shelf: original.shelf, dateStarted: original.dateStarted, dateRead: original.dateRead, updatedAt: original.updatedAt }).where(eq(schema.books.id, editableBookId));
+  }
+});
+
+test('book editor keeps drafts after errors, supports retry and remains accessible on phones', async ({ page }) => {
+  const { eq } = await import('drizzle-orm');
+  const [original] = await database.db.select().from(schema.books).where(eq(schema.books.id, editableBookId));
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/library/${editableBookId}`);
+    await page.getByRole('button', { name: 'Edit rating & status' }).click();
+    const form = page.getByRole('form', { name: 'Edit Piranesi', exact: true });
+    await form.getByRole('combobox', { name: 'Your rating' }).selectOption('3');
+    await page.route(`**/api/books/${editableBookId}`, (route) => route.fulfill({ status: 500, json: { error: 'Temporary save failure.' } }));
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    await expect(form.getByRole('alert')).toHaveText('Temporary save failure.');
+    await expect(form.getByRole('combobox', { name: 'Your rating' })).toHaveValue('3');
+    expect((await database.db.select().from(schema.books).where(eq(schema.books.id, editableBookId)))[0].myRating).toBe(original.myRating);
+    const accessibility = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
+    expect(accessibility.violations).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    await page.screenshot({ path: `${artifacts}/book-editor-dark-390.png`, fullPage: true });
+    await page.unroute(`**/api/books/${editableBookId}`);
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByTestId('book-details').locator('[aria-label="3 of 5 stars"]')).toBeVisible();
+    await page.getByRole('button', { name: 'Switch to light theme' }).click();
+    await page.getByRole('button', { name: 'Edit rating & status' }).click();
+    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+    await page.screenshot({ path: `${artifacts}/book-editor-light-390.png`, fullPage: true });
+  } finally {
+    await database.db.update(schema.books).set({ myRating: original.myRating, updatedAt: original.updatedAt }).where(eq(schema.books.id, editableBookId));
+  }
+});
+
+test('starting a recommendation moves it to the shared library', async ({ page }) => {
+  const { eq, and } = await import('drizzle-orm');
+  const id = randomUUID();
+  const title = 'Startable recommendation';
+  await database.db.insert(schema.recommendations).values({ id, userId, title, author: 'New Writer', reason: 'A recommendation to start', synopsis: 'Preserved synopsis' });
+  try {
+    await page.goto('/library#next');
+    const card = page.locator('#next article').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+    await card.getByRole('button', { name: 'Start reading', exact: true }).click();
+    await expect(page).toHaveURL(/\/library\/[a-f0-9-]+$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
+    const [book] = await database.db.select().from(schema.books).where(and(eq(schema.books.userId, userId), eq(schema.books.title, title)));
+    expect(book.shelf).toBe('currently-reading');
+    expect(book.dateStarted).not.toBeNull();
+    expect(book.synopsis).toBe('Preserved synopsis');
+    expect(await database.db.select().from(schema.recommendations).where(eq(schema.recommendations.id, id))).toHaveLength(0);
+    await page.getByRole('link', { name: /Back to the shelf/ }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
+    await expect(page.locator('#next').getByRole('heading', { name: title, exact: true })).toHaveCount(0);
+  } finally {
+    await database.db.delete(schema.recommendations).where(eq(schema.recommendations.id, id));
+    await database.db.delete(schema.books).where(and(eq(schema.books.userId, userId), eq(schema.books.title, title)));
+  }
+});
+
+test('start from a recommendation detail page reuses an existing book and preserves its rating', async ({ page }) => {
+  const { eq } = await import('drizzle-orm');
+  const [original] = await database.db.select().from(schema.books).where(eq(schema.books.id, editableBookId));
+  const id = randomUUID();
+  await database.db.insert(schema.recommendations).values({ id, userId, title: 'piranesi', author: 'SUSANNA CLARKE', reason: 'Start the existing book' });
+  try {
+    await page.goto(`/library/${id}?rec=1`);
+    await page.getByRole('button', { name: 'Start reading' }).click();
+    await expect(page).toHaveURL(new RegExp(`/library/${editableBookId}$`));
+    await expect(page.getByTestId('book-details').getByText('Reading now', { exact: true })).toBeVisible();
+    const [saved] = await database.db.select().from(schema.books).where(eq(schema.books.id, editableBookId));
+    expect(saved.myRating).toBe(original.myRating);
+    expect(saved.notes).toBe(original.notes);
+    expect(saved.dateAdded).toBe(original.dateAdded);
+  } finally {
+    await database.db.delete(schema.recommendations).where(eq(schema.recommendations.id, id));
+    await database.db.update(schema.books).set({ shelf: original.shelf, dateStarted: original.dateStarted, updatedAt: original.updatedAt }).where(eq(schema.books.id, editableBookId));
+  }
+});
+
+test('recommendation deletion requires confirmation, can be cancelled and never deletes the book', async ({ page }) => {
+  const { eq } = await import('drizzle-orm');
+  const id = randomUUID();
+  await database.db.insert(schema.recommendations).values({ id, userId, title: 'Piranesi', author: 'Susanna Clarke', reason: 'Delete only this suggestion' });
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/library#next');
+    const card = page.locator('#next article').filter({ has: page.getByRole('heading', { name: 'Piranesi', exact: true }) });
+    await card.getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(card.getByRole('button', { name: 'Confirm delete' })).toBeFocused();
+    await card.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(card.getByRole('button', { name: 'Delete', exact: true })).toBeFocused();
+    expect(await database.db.select().from(schema.recommendations).where(eq(schema.recommendations.id, id))).toHaveLength(1);
+    await card.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.route(`**/api/recommendations/${id}`, (route) => route.fulfill({ status: 500, json: { error: 'Temporary delete failure.' } }));
+    await card.getByRole('button', { name: 'Confirm delete' }).click();
+    await expect(card.getByRole('alert')).toHaveText('Temporary delete failure.');
+    expect(await database.db.select().from(schema.recommendations).where(eq(schema.recommendations.id, id))).toHaveLength(1);
+    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+    await page.screenshot({ path: `${artifacts}/recommendation-delete-dark-390.png`, fullPage: true });
+    await page.unroute(`**/api/recommendations/${id}`);
+    await card.getByRole('button', { name: 'Confirm delete' }).click();
+    await expect(card).toHaveCount(0);
+    expect(await database.db.select().from(schema.books).where(eq(schema.books.id, editableBookId))).toHaveLength(1);
+  } finally { await database.db.delete(schema.recommendations).where(eq(schema.recommendations.id, id)); }
+});
+
+test('dashboard mutation endpoints reject invalid data, foreign accounts and cross-origin writes', async ({ page, playwright, baseURL }) => {
+  const { eq } = await import('drizzle-orm');
+  const recId = randomUUID();
+  await database.db.insert(schema.recommendations).values({ id: recId, userId: otherId, title: 'Private suggestion', author: 'Hidden', reason: 'Never change this' });
+  try {
+    expect((await page.request.patch(`/api/books/${editableBookId}`, { data: { myRating: 6 } })).status()).toBe(400);
+    expect((await page.request.patch(`/api/books/${editableBookId}`, { data: { shelf: 'read' } })).status()).toBe(400);
+    expect((await page.request.patch(`/api/books/${editableBookId}`, { data: { userId: otherId, myRating: 5 } })).status()).toBe(400);
+    expect((await page.request.patch('/api/books/not-a-uuid', { data: { myRating: 3 } })).status()).toBe(400);
+    expect((await page.request.patch(`/api/books/${foreignBookId}`, { data: { myRating: 1 } })).status()).toBe(404);
+    expect((await page.request.post(`/api/recommendations/${recId}/start-reading`, { data: { date: `${year}-11-15` } })).status()).toBe(404);
+    expect((await page.request.delete(`/api/recommendations/${recId}`)).status()).toBe(404);
+    expect((await page.request.patch(`/api/books/${editableBookId}`, { data: { myRating: 1 }, headers: { origin: 'https://evil.test' } })).status()).toBe(403);
+    const anonymous = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie: `bookshelf_session=${randomUUID()}` } });
+    try { expect((await anonymous.patch(`/api/books/${editableBookId}`, { data: { myRating: 1 } })).status()).toBe(401); } finally { await anonymous.dispose(); }
+    expect((await database.db.select().from(schema.books).where(eq(schema.books.id, foreignBookId)))[0].myRating).toBe(5);
+    expect(await database.db.select().from(schema.recommendations).where(eq(schema.recommendations.id, recId))).toHaveLength(1);
+  } finally { await database.db.delete(schema.recommendations).where(eq(schema.recommendations.id, recId)); }
 });

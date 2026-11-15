@@ -1,5 +1,11 @@
 # OpenShelf development
 
+## Delivery preference
+
+Change requests include committing and deploying to production after verification,
+unless the user explicitly asks otherwise. Do not stop at an uncommitted local
+implementation or ask for a separate deployment confirmation.
+
 ## Commands
 
 Node 22. Environment variables load from `.env.local` with mise; the local
@@ -21,8 +27,10 @@ CSV parsing, and recommendation generation. Do not reintroduce embedded AI.
 Server components query Drizzle directly. `/library` provides search, shelves,
 labels, and recommendations; `/library/[id]` displays book details and personal
 notes. `/stats` provides reading analytics. `/settings` manages MCP connections.
-The library UI is for browsing, not editing. Follow `docs/redesign/README.md`
-for the Reading Room theme, typography, and layouts (dark by default).
+The library UI is primarily for browsing, with explicit manual rating/status
+controls and recommendation Start reading/Delete actions. Follow
+`docs/redesign/README.md` for the Reading Room theme, typography, and layouts
+(dark by default); its original read-only rule is superseded by these controls.
 
 Magic-link auth uses Resend and an email allowlist. Page guards are
 `requireUser`/`requireAdmin`; session-authenticated API guards are
@@ -40,6 +48,12 @@ from the LLM. Tools receive a user-scoped library service created by the route.
 - `src/lib/library/validation.ts`: strict Zod tool/record input schemas.
 - `src/lib/library/service.ts`: user-scoped book/recommendation operations.
   Saves lock the owning user row within a transaction before identity matching.
+- `src/components/BookControls.tsx`: explicit Save/Cancel for rating/status edits.
+- `src/components/RecommendationActions.tsx`: start a suggestion or confirm its
+  deletion. Starting saves/reuses the book and removes the suggestion atomically.
+- Dashboard mutation routes validate UUIDs and strict inputs, check Origin when
+  supplied, scope to the session user, and invalidate affected views. Existing
+  dates are preserved; missing dates use the local date submitted by the UI.
 - `src/lib/mcp/server.ts`: tool descriptions, schemas, annotations, instructions.
 - `src/lib/mcp/transport.ts`: HTTP/auth/origin handling and transport lifecycle.
 - `src/lib/auth/apiToken.ts`: random token generation and SHA-256 authentication.

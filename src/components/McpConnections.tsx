@@ -99,8 +99,9 @@ export function McpConnections() {
         )}
       </section>
       <section className="bg-surface rounded-2xl border border-border p-6 space-y-3">
-        <h2 className="font-display text-2xl">Your assistant manages, OpenShelf displays</h2>
+        <h2 className="font-display text-2xl">Your library, with your assistant</h2>
         <p className="text-sm text-muted">Tell your assistant “I finished this book.” It can find the book, ask about your rating and reading date, and save your thoughts. Ask it for recommendations and save the ones you want to keep.</p>
+        <p className="text-sm text-muted">You can also edit ratings and reading status here, or start and delete saved recommendations. Your assistant sees those same updates.</p>
         <p className="text-sm text-muted">Moving an existing library? Give your CSV to your assistant and ask it to add the books through OpenShelf. There is no file upload or built-in AI here, and Kindle syncing is not available.</p>
       </section>
     </div>

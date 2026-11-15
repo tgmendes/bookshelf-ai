@@ -57,6 +57,10 @@ async function main() {
     assert.equal(saved.isError, undefined);
     const savedData = JSON.parse((saved.content as Array<{ text: string }>)[0].text);
     assert.equal(savedData.book.dateStarted, '2026-11-01');
+    const rated = await request(`/api/books/${savedData.book.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ myRating: 5 }) });
+    assert.equal(rated.status, 200);
+    const afterManualEdit = await client.callTool({ name: 'get_book', arguments: { id: savedData.book.id } });
+    assert.equal(JSON.parse((afterManualEdit.content as Array<{ text: string }>)[0].text).myRating, 5);
     const recommendation = await client.callTool({ name: 'save_recommendation', arguments: {
       title: 'Smoke Recommendation', author: 'Another Author', reason: 'Because you liked the ending.', source: 'Smoke assistant',
     } });
@@ -84,11 +88,28 @@ async function main() {
     const settings = await request('/settings');
     assert.equal(settings.status, 200);
     assert.match(await settings.text(), /Connect your assistant/);
+    const status = await request(`/api/books/${savedData.book.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shelf: 'currently-reading', effectiveDate: '2026-11-15' }) });
+    assert.equal(status.status, 200);
+    const retained = await status.json();
+    assert.equal(retained.book.dateStarted, '2026-11-01');
+    assert.equal(retained.book.dateRead, '2026-11-15');
+    const started = await request(`/api/recommendations/${recData.recommendation.id}/start-reading`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: '2026-11-15' }) });
+    assert.equal(started.status, 200);
+    const startedData = await started.json();
+    const mcpStarted = await client.callTool({ name: 'get_book', arguments: { id: startedData.book.id } });
+    assert.equal(JSON.parse((mcpStarted.content as Array<{ text: string }>)[0].text).shelf, 'currently-reading');
+    const recommendationsAfterStart = await client.callTool({ name: 'list_recommendations', arguments: {} });
+    assert.equal(JSON.parse((recommendationsAfterStart.content as Array<{ text: string }>)[0].text).recommendations.length, 0);
+    const extraRec = await client.callTool({ name: 'save_recommendation', arguments: { title: 'Smoke delete only', author: 'Another Author', reason: 'Delete this suggestion only' } });
+    const extraId = JSON.parse((extraRec.content as Array<{ text: string }>)[0].text).recommendation.id;
+    assert.equal((await request(`/api/recommendations/${extraId}`, { method: 'DELETE' })).status, 200);
+    const recommendationsAfterDelete = await client.callTool({ name: 'list_recommendations', arguments: {} });
+    assert.equal(JSON.parse((recommendationsAfterDelete.content as Array<{ text: string }>)[0].text).recommendations.length, 0);
     const revoked = await request(`/api/tokens/${token.id}`, { method: 'DELETE' });
     assert.deepEqual(await revoked.json(), { revoked: true });
     const denied = await fetch(`${appUrl}/api/mcp`, { method: 'POST', headers: { authorization: `Bearer ${token.token}` } });
     assert.equal(denied.status, 401);
-    console.log('HTTP smoke passed: MCP writes, token lifecycle/isolation, library, details, recommendations, and connections.');
+    console.log('HTTP smoke passed: MCP and dashboard edits share data, recommendation start/delete, token lifecycle/isolation, and rendered pages.');
   } finally {
     await client.close();
     await db.delete(apiTokens).where(inArray(apiTokens.userId, [userId, otherId]));

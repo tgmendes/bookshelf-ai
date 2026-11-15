@@ -2,7 +2,8 @@
 
 A reading database with an MCP interface and a browsing UI. Your external
 assistant manages books, ratings, reading dates, personal notes, and saved
-recommendations. OpenShelf does not run an LLM or upload CSV files.
+recommendations. You can also adjust ratings/status and act on recommendations
+in the dashboard. OpenShelf does not run an LLM or upload CSV files.
 
 ## Run locally
 
@@ -97,11 +98,12 @@ and readable, but are not managed through these MCP tools.
 
 Recommendations are separate from reading history. Saving or finishing a book
 does not automatically delete its recommendation. The assistant can remove it
-if asked.
+if asked; the dashboard's explicit **Start reading** action moves it into the
+library and removes the saved recommendation in one transaction.
 
 ## Reading Room redesign
 
-The read-only shelf and Reading year pages follow `docs/redesign/README.md`.
+The shelf and Reading year pages follow the visual design in `docs/redesign/README.md`.
 Dark is the default; the theme toggle preserves an explicit light preference.
 Book colours are derived from their IDs. Charts use CSS, not a chart library.
 The optional assistant-written year summary is not included.
@@ -127,6 +129,27 @@ omission preserves it, `null` clears it, and the assistant must never infer it.
 Older recommendations use their creation time for the updated indicator until
 they are edited. Reading totals use finished dates, not import/start dates.
 Shelf headings display the actual year range represented by the filtered books.
+
+### Dashboard controls
+
+- **Edit rating & status** is available on book detail pages, selected shelf
+  panels, and Reading now. Choose Unrated or 1–5 stars and Want to read, Reading,
+  or Read, then Save changes. Cancel does not write anything. Only changed
+  fields are submitted, so a rating correction does not overwrite other data.
+- **Start reading** appears on recommendation cards and detail pages. It reuses
+  one exact case-insensitive title/author match or creates a book, preserving
+  existing notes, ratings, dates and metadata. Ambiguous matches are refused.
+  The recommendation is removed only once the book is saved successfully.
+  Its cover/synopsis carry over; its recommendation reason is not substituted
+  for your personal notes. The book page opens after starting.
+- **Delete** requires confirmation and removes only the recommendation, never
+  a library book. Cancel leaves it intact.
+
+Missing start/finish dates use the user's local today, explicitly submitted by
+these actions. Existing dates are kept. MCP edits still preserve omitted fields
+and never infer dates. Both interfaces read/write the same user-scoped records.
+Dashboard actions are session-authenticated and reject foreign-origin writes.
+No database schema migration is required for these controls.
 
 ### Typical conversations
 

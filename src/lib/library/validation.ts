@@ -44,3 +44,15 @@ export const recommendationInput = z.object({
 export type BookInput = z.infer<typeof bookInput>;
 export type RecommendationInput = z.infer<typeof recommendationInput>;
 export type ListInput = z.infer<typeof listInput>;
+
+export const bookStateInput = z.object({
+  myRating: z.number().int().min(0).max(5).optional(),
+  shelf: z.enum(['read', 'currently-reading', 'to-read']).optional(),
+  effectiveDate: date.optional(),
+}).strict()
+  .refine((value) => value.myRating !== undefined || value.shelf !== undefined, 'Supply a rating or status.')
+  .refine((value) => !value.shelf || value.shelf === 'to-read' || !!value.effectiveDate, 'Supply the date of this reading action.');
+
+export const startRecommendationInput = z.object({ date }).strict();
+export type BookStateInput = z.infer<typeof bookStateInput>;
+export type StartRecommendationInput = z.infer<typeof startRecommendationInput>;

@@ -1,24 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { recommendations } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { z } from 'zod';
 import { requireApiUser } from '@/lib/auth/requireApiUser';
+import { createLibraryService } from '@/lib/library/service';
+import { checkDashboardOrigin, libraryFailure, refreshLibraryViews } from '@/lib/library/http';
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireApiUser();
   if (auth.error) return auth.error;
-
+  const denied = checkDashboardOrigin(request);
+  if (denied) return denied;
+  const { id } = await params;
+  if (!z.uuid().safeParse(id).success) return Response.json({ error: 'Invalid recommendation id.' }, { status: 400 });
   try {
-    const { id } = await params;
-    await db
-      .delete(recommendations)
-      .where(and(eq(recommendations.id, id), eq(recommendations.userId, auth.userId)));
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error('DELETE /api/recommendations/[id] error:', err);
-    return NextResponse.json({ error: 'Failed to delete recommendation' }, { status: 500 });
-  }
+    await createLibraryService(auth.userId).removeRecommendation(id);
+    refreshLibraryViews(id);
+    return Response.json({ ok: true });
+  } catch (error) { return libraryFailure(error, 'Could not delete this recommendation. Please try again.'); }
 }

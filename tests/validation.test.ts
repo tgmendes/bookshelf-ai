@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { bookInput, listInput, recommendationInput } from '../src/lib/library/validation';
+import { bookInput, listInput, recommendationInput, bookStateInput, startRecommendationInput } from '../src/lib/library/validation';
 
 test('book validation rejects unsafe or invalid values', () => {
   for (const input of [
@@ -22,4 +22,21 @@ test('pagination is bounded and recommendation reasons are required', () => {
   assert.equal(listInput.safeParse({ limit: 101 }).success, false);
   assert.equal(listInput.safeParse({ offset: -1 }).success, false);
   assert.equal(recommendationInput.safeParse({ title: 'Dune', author: 'Frank Herbert', reason: ' ' }).success, false);
+});
+
+test('dashboard updates are narrow, bounded, and require an explicit date for reading actions', () => {
+  assert.deepEqual(bookStateInput.parse({ myRating: 0 }), { myRating: 0 });
+  assert.equal(bookStateInput.safeParse({ myRating: 6 }).success, false);
+  assert.equal(bookStateInput.safeParse({ myRating: 2.5 }).success, false);
+  assert.equal(bookStateInput.safeParse({ userId: 'someone-else', myRating: 5 }).success, false);
+  assert.equal(bookStateInput.safeParse({ title: 'Unrequested edit' }).success, false);
+  assert.equal(bookStateInput.safeParse({}).success, false);
+  assert.equal(bookStateInput.safeParse({ shelf: 'finished' }).success, false);
+  assert.equal(bookStateInput.safeParse({ shelf: 'read' }).success, false);
+  assert.equal(bookStateInput.safeParse({ shelf: 'read', effectiveDate: '2026-02-30' }).success, false);
+  assert.equal(bookStateInput.safeParse({ shelf: 'to-read' }).success, true);
+  assert.equal(bookStateInput.safeParse({ shelf: 'read', effectiveDate: '2026-11-15' }).success, true);
+  assert.equal(startRecommendationInput.safeParse({}).success, false);
+  assert.equal(startRecommendationInput.safeParse({ date: 'today' }).success, false);
+  assert.equal(startRecommendationInput.safeParse({ date: '2026-11-15' }).success, true);
 });

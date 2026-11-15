@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { SavedRecommendation } from '@/lib/types';
 import { getBookColor } from '@/lib/coverGradients';
 import { formatBookDate } from '@/lib/reading-room';
+import { RecommendationActions } from './RecommendationActions';
 
 export function SavedRecommendations({ recommendations }: { recommendations: SavedRecommendation[] }) {
   return (
@@ -15,6 +16,7 @@ export function SavedRecommendations({ recommendations }: { recommendations: Sav
               <div><h3 className="font-display text-[21px] font-medium leading-[1.2]"><Link href={`/library/${rec.id}?rec=1`} className="inline-flex min-h-11 min-w-11 items-center break-words hover:text-accent">{rec.title}</Link></h3><p className="mt-1 text-sm text-muted">{rec.author}</p></div>
               <p className="border-l-2 border-accent pl-3.5 whitespace-pre-line break-words">{rec.reason}</p>
               <p className="mt-auto text-xs text-muted">Saved by {rec.source ?? 'your assistant'}{rec.createdAt && <> · <time dateTime={rec.createdAt}>{formatBookDate(rec.createdAt)}</time></>}</p>
+              <RecommendationActions id={rec.id} title={rec.title} />
             </article>
           ))}
         </div>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReadingBook } from '@/lib/types';
 import { formatBookDate } from '@/lib/reading-room';
+import { BookControls } from './BookControls';
 
 export function BookMetadata({ book }: { book: Pick<ReadingBook, 'author' | 'yearPublished' | 'pages'> }) {
   return <p className="mt-1.5 text-muted">{[book.author, book.yearPublished, book.pages > 0 ? `${book.pages.toLocaleString('en-GB')} pages` : null].filter(Boolean).join(' · ')}</p>;
@@ -29,6 +30,7 @@ export function BookDetails({ book, fullPage = false }: { book: ReadingBook; ful
           <div><p className="eyebrow">You</p><RatingStars rating={book.myRating} /></div>
           <div><p className="eyebrow">Community</p><p className="mt-1 font-display text-[26px] leading-tight">{book.avgRating != null ? book.avgRating.toFixed(1) : '—'}<span className="text-sm text-muted"> / 5</span></p></div>
         </div>
+        <BookControls key={book.id} book={book} />
         {book.notes && (
           <div className="mt-6 rounded-[14px] bg-bg px-6 py-5">
             <p className="eyebrow">Your notes</p>

@@ -7,6 +7,7 @@ import type { ReadingBook } from '@/lib/types';
 import { formatBookDate, getReadingNowBooks, getCarouselOffset } from '@/lib/reading-room';
 import { BookCover } from './BookCover';
 import { BookMetadata } from './BookDetails';
+import { BookControls } from './BookControls';
 
 export function ReadingNow({ books }: { books: ReadingBook[] }) {
   const reading = getReadingNowBooks(books);
@@ -91,13 +92,14 @@ export function ReadingNow({ books }: { books: ReadingBook[] }) {
           <button type="button" className="icon-button" aria-label="Next reading book" aria-controls="reading-now-details" onClick={() => select(selectedIndex + 1)}><ChevronRight className="size-[18px]" aria-hidden="true" /></button>
         </div>
       )}
-      <p role="status" aria-atomic="true" className="sr-only">{book.title}. Book {selectedIndex + 1} of {reading.length}.</p>
+      <p role="status" aria-label="Reading position" aria-atomic="true" className="sr-only">{book.title}. Book {selectedIndex + 1} of {reading.length}.</p>
       <div id="reading-now-details" className={`mx-auto mt-8 grid max-w-[960px] grid-cols-1 items-center gap-8 lg:gap-12 ${book.notes ? 'lg:grid-cols-2' : 'text-center'}`}>
         <div className="min-w-0">
           <h1 className="break-words font-display text-4xl font-light leading-[1.1] sm:text-[44px]"><Link className="block min-h-11 min-w-11" href={`/library/${book.id}`}>{book.title}</Link></h1>
           <BookMetadata book={book} />
           {book.dateStarted && <p className="mt-3.5 text-sm text-muted">Reading since <time dateTime={book.dateStarted}>{formatBookDate(book.dateStarted)}</time></p>}
           <Link href={`/library/${book.id}`} className="room-link mt-2 text-sm" aria-label={`Open ${book.title} book page`}>Open book page →</Link>
+          <BookControls key={book.id} book={book} />
         </div>
         {book.notes && (
           <figure className="min-w-0 rounded-2xl bg-surface px-6 py-7 sm:px-8">

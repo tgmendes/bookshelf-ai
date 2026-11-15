@@ -6,6 +6,7 @@ import { getReadingData } from '@/lib/reading-data';
 import { formatBookDate } from '@/lib/reading-room';
 import { BookCover } from '@/components/BookCover';
 import { BookDetails } from '@/components/BookDetails';
+import { RecommendationActions } from '@/components/RecommendationActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,7 @@ export default async function BookDetailPage({ params, searchParams }: { params:
       {book ? <BookDetails book={book} fullPage /> : recommendation && (
         <article className="grid min-w-0 grid-cols-1 gap-8 rounded-[20px] bg-surface p-6 sm:p-9 lg:grid-cols-2 lg:gap-10">
           <div className="min-w-0"><p className="eyebrow text-accent">Up next</p><h1 className="mt-2 break-words font-display text-[44px] font-light leading-[1.1]">{recommendation.title}</h1><p className="mt-1.5 text-muted">{recommendation.author}</p>{recommendation.synopsis && <p className="mt-5 whitespace-pre-line break-words">{recommendation.synopsis}</p>}</div>
-          <div className="min-w-0"><h2 className="eyebrow">Why it was recommended</h2><p className="mt-4 whitespace-pre-wrap break-words border-l-2 border-accent pl-3.5">{recommendation.reason}</p><p className="mt-6 text-[13px] text-muted">Saved by {recommendation.source ?? 'your assistant'}{recommendation.createdAt && <> · {formatBookDate(recommendation.createdAt, true)}</>}</p></div>
+          <div className="min-w-0"><h2 className="eyebrow">Why it was recommended</h2><p className="mt-4 whitespace-pre-wrap break-words border-l-2 border-accent pl-3.5">{recommendation.reason}</p><p className="mt-6 text-[13px] text-muted">Saved by {recommendation.source ?? 'your assistant'}{recommendation.createdAt && <> · {formatBookDate(recommendation.createdAt, true)}</>}</p><div className="mt-5"><RecommendationActions id={recommendation.id} title={recommendation.title} /></div></div>
         </article>
       )}
       {others.length > 0 && <section className="pt-12" aria-labelledby="same-author-heading"><h2 id="same-author-heading" className="section-title">More by {book!.author}</h2><div className="mt-7 flex flex-wrap gap-7">{others.map((other) => <Link href={`/library/${other.id}`} key={other.id} className="max-w-[140px]"><BookCover book={other} small /><p className="mt-3 text-sm">{other.title}</p></Link>)}</div></section>}

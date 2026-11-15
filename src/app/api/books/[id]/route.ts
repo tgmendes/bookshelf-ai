@@ -1,41 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { books } from '@/lib/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { z } from 'zod';
 import { requireApiUser } from '@/lib/auth/requireApiUser';
+import { createLibraryService } from '@/lib/library/service';
+import { bookStateInput } from '@/lib/library/validation';
+import { checkDashboardOrigin, libraryFailure, refreshLibraryViews } from '@/lib/library/http';
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireApiUser();
   if (auth.error) return auth.error;
-
+  const denied = checkDashboardOrigin(request);
+  if (denied) return denied;
   const { id } = await params;
-  const body = await req.json();
-  const { shelf, myRating } = body as { shelf?: string; myRating?: number | null };
-
-  const updates: Record<string, unknown> = {};
-  if (shelf !== undefined) updates.shelf = shelf;
-  if (myRating !== undefined) updates.myRating = myRating;
-  if (shelf === 'read' && !('dateRead' in body)) {
-    updates.dateRead = new Date().toISOString().split('T')[0];
-  }
-  if ('dateRead' in body) updates.dateRead = body.dateRead;
-
-  if (Object.keys(updates).length === 0) {
-    return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
-  }
-
+  if (!z.uuid().safeParse(id).success) return Response.json({ error: 'Invalid book id.' }, { status: 400 });
+  const parsed = bookStateInput.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return Response.json({ error: 'Supply a valid rating/status and a date for reading actions.' }, { status: 400 });
   try {
-    await db
-      .update(books)
-      .set(updates)
-      .where(and(eq(books.id, id), eq(books.userId, auth.userId)));
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error('PATCH /api/books/[id] error:', err);
-    return NextResponse.json({ error: 'Failed to update book' }, { status: 500 });
-  }
+    const result = await createLibraryService(auth.userId).updateBookState(id, parsed.data);
+    refreshLibraryViews(id);
+    return Response.json(result, { headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) { return libraryFailure(error, 'Could not update this book. Please try again.'); }
 }
