@@ -2,6 +2,18 @@ import type { ReadingBook } from './types';
 
 export interface ShelfParams { shelf?: string; search?: string; sort?: string; label?: string }
 
+export function getReadingNowBooks(books: ReadingBook[]) {
+  return books.filter((book) => book.shelf === 'currently-reading')
+    .sort((a, b) => b.dateAdded.localeCompare(a.dateAdded) || a.id.localeCompare(b.id));
+}
+
+export function getCarouselOffset(index: number, selected: number, count: number) {
+  let offset = index - selected;
+  if (offset > count / 2) offset -= count;
+  if (offset < -count / 2) offset += count;
+  return offset;
+}
+
 export function filterShelf(books: ReadingBook[], params: ShelfParams) {
   const shelf = params.shelf ?? 'read';
   const search = params.search?.trim().toLowerCase();

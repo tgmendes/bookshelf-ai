@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth/requireUser';
 import { getReadingData } from '@/lib/reading-data';
-import { filterShelf, getReadingYear, type ShelfParams } from '@/lib/reading-room';
+import { filterShelf, getReadingYear, getReadingNowBooks, type ShelfParams } from '@/lib/reading-room';
 import { LibraryFilters } from '@/components/LibraryFilters';
 import { ReadingShelf } from '@/components/ReadingShelf';
 import { ReadingNow } from '@/components/ReadingNow';
@@ -26,7 +26,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
   const countLabel = shelf === 'read' ? 'read' : shelf === 'currently-reading' ? 'reading' : 'books';
   return (
     <div className="room-wrap pb-20">
-      <ReadingNow books={data.books} />
+      <ReadingNow books={getReadingNowBooks(data.books)} />
       <section id="shelf" aria-labelledby="shelf-heading" className="min-w-0 scroll-mt-6 pt-10">
         <Suspense fallback={null}><LibraryFilters labels={data.labels} heading={<h2 id="shelf-heading" className="section-title">The shelf <span className="font-body text-base text-muted">· {yearLabel} · {visible.length} {countLabel}</span></h2>} /></Suspense>
         {!data.books.length ? <EmptyLibrary /> : <ReadingShelf books={visible} />}

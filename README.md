@@ -106,6 +106,13 @@ Dark is the default; the theme toggle preserves an explicit light preference.
 Book colours are derived from their IDs. Charts use CSS, not a chart library.
 The optional assistant-written year summary is not included.
 
+Reading now is a manual cover carousel, ordered by `dateAdded` newest first
+(stable book-ID order for ties). Its selected cover is centred, with tilted
+neighbours. Click a neighbouring cover, use previous/next or arrow keys, or
+swipe horizontally to select another book. Home/End jump to the newest/oldest;
+the title, note and start date follow the selection. It never auto-rotates and
+respects reduced-motion preferences. Start dates and note edits do not reorder it.
+
 For an existing database, apply `drizzle/reading-room-upgrade.sql` after the
 agent-first upgrade and before running this code. Alternatively, use `db:push`
 against a database whose schema is already managed by Drizzle:

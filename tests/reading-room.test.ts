@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getBookPastel, getSpineSize, getMiniSpineHeight } from '../src/lib/coverGradients';
-import { getReadingYear, filterShelf, selectDefaultBook, formatBookDate, formatRelativeTime } from '../src/lib/reading-room';
+import { getReadingYear, filterShelf, selectDefaultBook, formatBookDate, formatRelativeTime, getReadingNowBooks, getCarouselOffset } from '../src/lib/reading-room';
 import type { ReadingBook } from '../src/lib/types';
 
 function book(id: string, values: Partial<ReadingBook> = {}): ReadingBook {
@@ -70,4 +70,26 @@ test('date-only formatting is timezone-safe and relative time has useful boundar
   assert.equal(formatBookDate(null), null);
   assert.equal(formatRelativeTime('2026-11-15T10:00:00Z', '2026-11-15T12:00:00Z'), '2 hours ago');
   assert.equal(formatRelativeTime('2026-11-15T12:00:30Z', '2026-11-15T12:00:00Z'), 'just now');
+});
+
+test('Reading now is newest-added first, never ordered by reading start or edits', () => {
+  const books = [
+    book('old', { shelf: 'currently-reading', dateAdded: '2026-01-01', dateStarted: '2026-12-01', updatedAt: '2026-12-01T00:00:00Z' }),
+    book('new', { shelf: 'currently-reading', dateAdded: '2026-11-01', dateStarted: null }),
+    book('finished', { shelf: 'read', dateAdded: '2026-12-01' }),
+    book('a', { shelf: 'currently-reading', dateAdded: '2026-06-01' }),
+    book('b', { shelf: 'currently-reading', dateAdded: '2026-06-01' }),
+  ];
+  assert.deepEqual(getReadingNowBooks(books).map((item) => item.id), ['new', 'a', 'b', 'old']);
+  assert.equal(books[0].id, 'old');
+  assert.deepEqual(getReadingNowBooks([]), []);
+});
+
+test('carousel neighbours wrap without duplicating the two-book case', () => {
+  assert.equal(getCarouselOffset(0, 0, 1), 0);
+  assert.deepEqual([0, 1].map((index) => getCarouselOffset(index, 0, 2)), [0, 1]);
+  assert.deepEqual([0, 1].map((index) => getCarouselOffset(index, 1, 2)), [-1, 0]);
+  assert.equal(getCarouselOffset(4, 0, 5), -1);
+  assert.equal(getCarouselOffset(0, 4, 5), 1);
+  assert.deepEqual([0, 1, 2, 3, 4].map((index) => getCarouselOffset(index, 2, 5)), [-2, -1, 0, 1, 2]);
 });

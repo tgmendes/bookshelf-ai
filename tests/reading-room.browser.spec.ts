@@ -8,6 +8,8 @@ import { pathToFileURL } from 'node:url';
 const userId = randomUUID();
 const sessionId = randomUUID();
 const currentId = randomUUID();
+const secondReadingId = randomUUID();
+const thirdReadingId = randomUUID();
 const olderId = randomUUID();
 const otherId = randomUUID();
 const labelId = randomUUID();
@@ -35,6 +37,8 @@ test.beforeAll(async ({ browser }) => {
   }))).returning({ id: books.id });
   await db.insert(books).values([
     { id: currentId, userId, title: 'The Dispossessed', author: 'Ursula K. Le Guin', shelf: 'currently-reading', pages: 387, yearPublished: 1974, dateAdded: `${year}-11-03`, dateStarted: `${year}-11-03`, notes: 'Shevek’s two worlds keep arguing in my head. Anarres feels less like utopia every chapter, and I think that’s the point.' },
+    { id: secondReadingId, userId, title: 'The Waves', author: 'Virginia Woolf', shelf: 'currently-reading', pages: 240, dateAdded: `${year}-10-01`, dateStarted: `${year}-11-10`, notes: 'A second reading note.' },
+    { id: thirdReadingId, userId, title: 'The Odyssey', author: 'Homer', shelf: 'currently-reading', pages: 400, dateAdded: `${year}-09-01`, dateStarted: null, notes: null },
     { id: olderId, userId, title: 'Last year’s book', author: 'Another Author', shelf: 'read', myRating: 5, dateAdded: `${year - 1}-01-01`, dateRead: `${year - 1}-01-01` },
     { userId, title: 'A book for later', author: 'Future Author', shelf: 'to-read', dateAdded: `${year}-01-01` },
     { userId: otherId, title: 'Private other-account book', author: 'Hidden', shelf: 'read', dateAdded: `${year}-01-01`, dateRead: `${year}-10-14`, myRating: 5 },
@@ -168,5 +172,117 @@ test('long assistant-written metadata stays inside the phone layout', async ({ p
   } finally {
     await database.db.update(schema.books).set({ author: 'Ursula K. Le Guin' }).where(eq(schema.books.id, currentId));
     await database.db.update(schema.recommendations).set({ source: recommendation.source }).where(eq(schema.recommendations.id, recommendation.id));
+  }
+});
+
+test('Reading now carousel follows date added, selects neighbours, wraps and supports keyboard navigation', async ({ page }) => {
+  await page.goto('/library');
+  const carousel = page.getByRole('region', { name: 'Reading now', exact: true });
+  await expect(carousel.getByRole('heading', { level: 1 })).toHaveText('The Dispossessed');
+  await expect(carousel.getByRole('button', { name: 'Show The Dispossessed by Ursula K. Le Guin' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(carousel.getByRole('status')).toContainText('Book 1 of 3');
+  await page.getByRole('button', { name: 'Next reading book' }).click();
+  await expect(carousel.getByRole('heading', { level: 1 })).toHaveText('The Waves');
+  await expect(carousel.getByText('A second reading note.', { exact: false })).toBeVisible();
+  await expect(carousel.getByText('Reading since 10 Nov')).toBeVisible();
+  await carousel.getByRole('button', { name: 'Show The Odyssey by Homer' }).click();
+  await expect(carousel.getByRole('heading', { level: 1 })).toHaveText('The Odyssey');
+  await expect(carousel.getByText('Your note', { exact: true })).toHaveCount(0);
+  await expect(carousel.getByText(/Reading since/)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Next reading book' }).click();
+  await expect(carousel.getByRole('heading', { level: 1 })).toHaveText('The Dispossessed');
+  const stage = page.getByRole('group', { name: 'Reading now book covers' });
+  await stage.focus();
+  await page.keyboard.press('ArrowLeft');
+  const oldest = carousel.getByRole('button', { name: 'Show The Odyssey by Homer' });
+  await expect(oldest).toBeFocused();
+  await expect(oldest).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('Home');
+  await expect(carousel.getByRole('heading', { level: 1 })).toHaveText('The Dispossessed');
+  await page.keyboard.press('End');
+  await expect(carousel.getByRole('heading', { level: 1 })).toHaveText('The Odyssey');
+  await page.keyboard.press('ArrowRight');
+  await expect(carousel.getByRole('heading', { level: 1 })).toHaveText('The Dispossessed');
+});
+
+test('Reading now swipes horizontally without hijacking vertical scrolling', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/library');
+  await page.waitForFunction(() => localStorage.getItem('theme') !== null);
+  const stage = page.getByRole('group', { name: 'Reading now book covers' });
+  const swipe = async (dx: number, dy: number) => stage.evaluate((element, { dx, dy }) => {
+    const start = new Touch({ identifier: 1, target: element, clientX: 240, clientY: 220 });
+    const end = new Touch({ identifier: 1, target: element, clientX: 240 + dx, clientY: 220 + dy });
+    element.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, touches: [start] }));
+    element.dispatchEvent(new TouchEvent('touchend', { bubbles: true, changedTouches: [end] }));
+  }, { dx, dy });
+  await swipe(-120, 10);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('The Waves');
+  await swipe(5, 120);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('The Waves');
+  await swipe(120, 10);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('The Dispossessed');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+test('Reading now handles two, one and no books without duplicates or empty controls', async ({ page }) => {
+  const { eq, inArray } = await import('drizzle-orm');
+  const { db } = database;
+  try {
+    await db.update(schema.books).set({ shelf: 'to-read' }).where(eq(schema.books.id, thirdReadingId));
+    await page.goto('/library');
+    const carousel = page.getByRole('region', { name: 'Reading now', exact: true });
+    await expect(carousel.locator('.coverflow-book')).toHaveCount(2);
+    await page.getByRole('button', { name: 'Next reading book' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('The Waves');
+    await db.update(schema.books).set({ shelf: 'to-read' }).where(eq(schema.books.id, secondReadingId));
+    await page.reload();
+    await expect(carousel.locator('.coverflow-book')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Next reading book' })).toHaveCount(0);
+    await db.update(schema.books).set({ shelf: 'to-read' }).where(eq(schema.books.id, currentId));
+    await page.reload();
+    await expect(carousel).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('A life in books.');
+  } finally {
+    await db.update(schema.books).set({ shelf: 'currently-reading' }).where(inArray(schema.books.id, [currentId, secondReadingId, thirdReadingId]));
+  }
+});
+
+test('Reading now respects reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/library');
+  const cover = page.getByRole('button', { name: 'Show The Dispossessed by Ursula K. Le Guin' });
+  expect(await cover.evaluate((element) => getComputedStyle(element).transitionDuration)).toBe('0s');
+  await page.getByRole('button', { name: 'Next reading book' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('The Waves');
+});
+
+test('many reading books stay bounded and keyboard jumps focus previously hidden covers', async ({ page }) => {
+  const { inArray } = await import('drizzle-orm');
+  const ids = Array.from({ length: 4 }, () => randomUUID());
+  await database.db.insert(schema.books).values(ids.map((id, index) => ({
+    id, userId, title: `Earlier reading ${index + 1}`, author: 'Test Author', shelf: 'currently-reading',
+    dateAdded: `${year}-0${8 - index}-01`, pages: 300,
+  })));
+  try {
+    await page.setViewportSize({ width: 1280, height: 960 });
+    await page.goto('/library');
+    const carousel = page.getByRole('region', { name: 'Reading now', exact: true });
+    await expect(carousel.locator('.coverflow-book')).toHaveCount(7);
+    await expect(carousel.locator('.coverflow-book:visible')).toHaveCount(5);
+    for (const target of await carousel.locator('.coverflow-book:visible').all()) {
+      expect((await target.boundingBox())!.width).toBeGreaterThanOrEqual(44);
+    }
+    await page.getByRole('group', { name: 'Reading now book covers' }).focus();
+    await page.keyboard.press('End');
+    const oldest = carousel.getByRole('button', { name: 'Show Earlier reading 4 by Test Author' });
+    await expect(oldest).toBeFocused();
+    await expect(oldest).toHaveAttribute('aria-pressed', 'true');
+    await expect(carousel.getByRole('heading', { level: 1 })).toHaveText('Earlier reading 4');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(carousel.locator('.coverflow-book:visible')).toHaveCount(3);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  } finally {
+    await database.db.delete(schema.books).where(inArray(schema.books.id, ids));
   }
 });
