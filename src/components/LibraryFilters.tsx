@@ -2,69 +2,50 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { Label } from '@/lib/types';
 
-const sorts = [
-  { value: 'dateAdded', label: 'Date added' },
-  { value: 'dateRead', label: 'Date read' },
-  { value: 'title', label: 'Title' },
-  { value: 'author', label: 'Author' },
-  { value: 'myRating', label: 'My rating' },
-];
-
 const shelves = [
-  { value: '', label: 'All books' },
-  { value: 'read', label: 'Read' },
-  { value: 'currently-reading', label: 'Reading' },
-  { value: 'to-read', label: 'Want to Read' },
-  { value: 'next-read', label: 'Recommendations' },
+  { value: 'read', label: 'Read' }, { value: 'to-read', label: 'Want to read' },
+  { value: 'currently-reading', label: 'Reading' }, { value: 'all', label: 'All' },
 ];
 
-export function LibraryFilters({ labels = [] }: { labels?: Label[] }) {
+export function LibraryFilters({ labels = [], heading }: { labels?: Label[]; heading?: ReactNode }) {
   const router = useRouter();
   const params = useSearchParams();
-  const currentShelf = params.get('shelf') ?? '';
-  const currentLabel = params.get('label') ?? '';
-
+  const requestedShelf = params.get('shelf') ?? 'read';
+  const shelf = shelves.some((item) => item.value === requestedShelf) ? requestedShelf : 'read';
   function update(key: string, value: string) {
     const next = new URLSearchParams(params.toString());
-    if (value) next.set(key, value);
-    else next.delete(key);
-    if (key === 'shelf' && value === 'next-read') next.delete('label');
-    router.push(`/library?${next.toString()}`);
+    if (value) next.set(key, value); else next.delete(key);
+    router.push(`/library?${next.toString()}#shelf`, { scroll: false });
   }
-
   return (
-    <div className="space-y-4 mb-6">
-      <div className="flex flex-wrap items-center gap-2">
-        {shelves.map(({ value, label }) => (
-          <button key={value} onClick={() => update('shelf', value)} aria-pressed={currentShelf === value}
-            className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${currentShelf === value ? 'bg-primary text-white' : 'bg-surface text-muted border border-border hover:text-primary hover:border-primary/40'}`}>
-            {label}
-          </button>
-        ))}
-        {currentShelf !== 'next-read' && labels.map((label) => (
-          <button key={label.id} onClick={() => update('label', currentLabel === label.id ? '' : label.id)}
-            aria-pressed={currentLabel === label.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border"
-            style={currentLabel === label.id ? { backgroundColor: label.color, color: '#fff', borderColor: label.color } : { borderColor: `${label.color}40`, color: label.color }}>
-            {label.name}
-          </button>
-        ))}
+    <div className="mb-5 space-y-4">
+      <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
+      {heading}
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Shelf filters">
+        {shelves.map(({ value, label }) => <button key={value} type="button" className="chip" aria-pressed={shelf === value} onClick={() => update('shelf', value)}>{label}</button>)}
+        <button type="button" className="chip" aria-pressed={params.get('sort') === 'myRating'} onClick={() => update('sort', params.get('sort') === 'myRating' ? 'dateRead' : 'myRating')}>By rating</button>
+      </div>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-          <input type="search" aria-label="Search books" defaultValue={params.get('search') ?? ''}
-            onChange={(event) => update('search', event.target.value)} placeholder="Search title or author…"
-            className="w-full pl-9 pr-4 py-2 text-sm border border-border rounded-xl bg-surface text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-primary/40" />
-        </div>
-        {currentShelf !== 'next-read' && (
-          <select aria-label="Sort books" value={params.get('sort') ?? 'dateAdded'} onChange={(event) => update('sort', event.target.value)}
-            className="text-sm border border-border rounded-xl px-3 py-2 bg-surface text-foreground">
-            {sorts.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
-          </select>
-        )}
+        <form action="/library#shelf" className="flex min-w-0 flex-1 items-center rounded-full border border-border-strong bg-surface pl-4">
+          <input type="hidden" name="shelf" value={shelf} />
+          {params.get('sort') && <input type="hidden" name="sort" value={params.get('sort')!} />}
+          {params.get('label') && <input type="hidden" name="label" value={params.get('label')!} />}
+          <input type="search" name="search" aria-label="Search books" defaultValue={params.get('search') ?? ''} placeholder="Search title or author…" className="h-11 min-w-0 flex-1 rounded-full bg-transparent text-sm outline-none" />
+          <button type="submit" aria-label="Search" className="grid size-11 shrink-0 place-items-center rounded-full text-muted hover:text-accent"><Search className="size-4" aria-hidden="true" /></button>
+        </form>
+        <select aria-label="Sort books" value={params.get('sort') ?? 'dateRead'} onChange={(event) => update('sort', event.target.value)} className="chip max-w-full">
+          <option value="dateRead">Date read</option><option value="dateAdded">Date added</option><option value="title">Title</option><option value="author">Author</option><option value="myRating">My rating</option>
+        </select>
       </div>
+      {labels.length > 0 && <div className="flex flex-wrap gap-2" role="group" aria-label="Label filters">{labels.map((label) => (
+        <button key={label.id} type="button" className="chip gap-2" aria-pressed={params.get('label') === label.id} onClick={() => update('label', params.get('label') === label.id ? '' : label.id)}>
+          <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: label.color }} aria-hidden="true" />{label.name}
+        </button>
+      ))}</div>}
     </div>
   );
 }

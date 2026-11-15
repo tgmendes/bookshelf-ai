@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenShelf — Reading year (reference mockup)</title>
+<!-- Reference mockup for the OpenShelf redesign. Static sample data. Spec: docs/redesign/README.md -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,200;0,300;0,400;0,500;0,600;1,300&family=Lato:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root, [data-theme="light"] {
+  --bg: #F3EDE2; --surface: #FBF8F2; --surface-2: #EDE4D3; --border: #DDD3C2; --border-strong: #CFC4B1;
+  --fg: #2E2A25; --muted: #6B6459;
+  --accent: #1F6F66; --accent-hover: #16524B; --accent-soft: #E3EFEC; --accent-on-soft: #16524B; --accent-faint: #A9C9C3;
+  --invert-bg: #2E2A25; --invert-fg: #F3EDE2;
+  --ledge: #D8C7A8; --ledge-shadow: #C4B08D; --spine-ink: #2E2A25;
+  --sage: #C9DCC8; --blush: #EBC9C3; --butter: #EFDDA8; --lavender: #D4CCE6; --sky: #C4D9E6; --peach: #F0CFAE;
+  --shadow: rgba(46,42,37,.45);
+}
+[data-theme="dark"] {
+  --bg: #121110; --surface: #1B1A18; --surface-2: #26231F; --border: #2E2B27; --border-strong: #3D3832;
+  --fg: #EEE8DD; --muted: #A39B8E;
+  --accent: #5DBFB0; --accent-hover: #7FD0C4; --accent-soft: rgba(93,191,176,.13); --accent-on-soft: #8ED6CB; --accent-faint: #2F5B55;
+  --invert-bg: #EEE8DD; --invert-fg: #121110;
+  --ledge: #3A322A; --ledge-shadow: #241F1A; --spine-ink: #1A1816;
+  --sage: #A9C2A8; --blush: #D3ACA5; --butter: #D9C68E; --lavender: #B6ADCF; --sky: #A6BFD0; --peach: #D8B492;
+  --shadow: rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Lato,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}a:hover{color:var(--accent-hover)}
+.wrap{max-width:1160px;margin:0 auto;padding:0 32px}
+.eyebrow{margin:0;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.eyebrow.accent{color:var(--accent)}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:28px 0;border-bottom:1px solid var(--border)}
+.logo{font-family:Raleway,sans-serif;font-weight:300;font-size:26px;letter-spacing:.18em;text-transform:uppercase}
+.logo b{font-weight:600;color:var(--accent)}
+nav{display:flex;flex-wrap:wrap;gap:4px}
+nav a{padding:10px 16px;border-radius:999px;color:var(--fg);text-decoration:none;font-size:14px}
+nav a:hover{background:var(--surface-2);color:var(--fg)}
+nav a[aria-current="page"]{background:var(--invert-bg);color:var(--invert-fg);font-weight:700}
+.right{display:flex;align-items:center;gap:10px}
+.sync{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:var(--accent-soft);color:var(--accent-on-soft);font-size:13px}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.icon-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--border-strong);background:transparent;color:var(--fg);display:grid;place-items:center;cursor:pointer}
+.chip{min-height:44px;padding:0 18px;border:1px solid var(--border-strong);background:transparent;color:var(--fg);border-radius:999px;font:inherit;font-size:14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--invert-bg);color:var(--invert-fg);border-color:var(--invert-bg)}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:32px;padding:64px 0 48px}
+h1{margin:24px 0 0;font-family:Raleway,sans-serif;font-weight:200;font-size:88px;line-height:.95}
+h1 em{font-weight:300;color:var(--accent)}
+dl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:40px;margin:0}
+dd{margin:4px 0 0;font-family:Raleway,sans-serif;font-weight:300;font-size:44px}
+h2{margin:0;font-family:Raleway,sans-serif;font-weight:400;font-size:30px}
+.card{padding:28px 32px;background:var(--surface);border-radius:20px}
+.card h2{font-size:22px;margin-bottom:20px}
+.months{overflow-x:auto;padding:24px 24px 16px;background:var(--surface);border-radius:20px;margin-top:24px}
+.mgrid{display:grid;grid-template-columns:repeat(12,minmax(72px,1fr));gap:14px;min-width:980px;align-items:end}
+.month{display:flex;flex-direction:column}
+.mshelf{display:flex;align-items:flex-end;justify-content:center;gap:3px;height:150px;border-bottom:8px solid var(--ledge)}
+.mshelf span{display:block;width:14px;border-radius:2px 2px 0 0;box-shadow:inset -2px 0 0 rgba(0,0,0,.08)}
+.mshelf span.now{background:transparent;border:1.5px dashed var(--accent);border-bottom:0;box-shadow:none}
+.mname{margin-top:10px;text-align:center;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.mcount{text-align:center;font-size:12px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;padding-top:24px}
+.bar{display:grid;grid-template-columns:92px minmax(0,1fr) 28px;gap:12px;align-items:center;margin-bottom:12px}
+.bar .s{color:var(--accent);letter-spacing:1px;font-size:14px}
+.bar .t{height:14px;border-radius:7px;background:var(--surface-2)}
+.bar .t i{display:block;height:14px;border-radius:7px;background:var(--accent)}
+.bar .t i.low{background:var(--accent-faint)}
+.bar .n{text-align:right;font-size:14px;color:var(--muted)}
+ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px}
+li{display:flex;align-items:center;gap:14px}
+li .d{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;font-family:Raleway,sans-serif;font-weight:500;color:var(--spine-ink)}
+li .a{font-family:Raleway,sans-serif;font-weight:500;font-size:17px}
+li .c{margin-left:auto;font-size:13px;color:var(--muted)}
+.boy{display:flex;gap:28px;align-items:center}
+.boy .cv{width:120px;height:180px;flex-shrink:0;border-radius:3px 8px 8px 3px;background:var(--lavender);color:var(--spine-ink);box-shadow:inset 8px 0 0 rgba(0,0,0,.08),0 14px 28px -16px var(--shadow);display:flex;align-items:flex-end;padding:16px 14px 16px 20px;font-family:Raleway,sans-serif;font-weight:300;font-size:20px}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--border);border-radius:20px;overflow:hidden}
+.facts div{padding:24px 28px;background:var(--surface)}
+.facts b{display:block;margin-top:6px;font-family:Raleway,sans-serif;font-weight:500;font-size:18px}
+.facts span{font-size:13px;color:var(--muted)}
+.summary{margin:48px 0 80px;padding:32px 36px;background:var(--accent-soft);border-radius:20px}
+.summary blockquote{margin:10px 0 0;font-family:Raleway,sans-serif;font-style:italic;font-weight:300;font-size:26px;line-height:1.4;max-width:46ch}
+.summary figcaption{margin-top:14px;font-size:13px;color:var(--accent-on-soft)}
+@media (max-width:640px){.wrap{padding:0 16px}h1{font-size:60px}dl{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+<span class="logo">Open<b>Shelf</b></span>
+<nav aria-label="Main">
+<a href="shelf.html">Shelf</a>
+<a href="shelf.html#next">Up next</a>
+<a href="#" aria-current="page">Reading year</a>
+<a href="#">Connections</a>
+</nav>
+<div class="right">
+<div class="sync"><i aria-hidden="true"></i>Updated by Claude · 2 hours ago</div>
+<button class="icon-btn" type="button" aria-label="Toggle light or dark theme" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+</button>
+</div>
+</header>
+
+<section class="top">
+<div>
+<div role="group" aria-label="Year" style="display:flex;gap:6px">
+<button class="chip" aria-pressed="false">2024</button>
+<button class="chip" aria-pressed="false">2025</button>
+<button class="chip" aria-pressed="true">2026</button>
+</div>
+<h1>2026,<br><em>in pages.</em></h1>
+</div>
+<dl>
+<div><dt class="eyebrow">Books</dt><dd>42</dd></div>
+<div><dt class="eyebrow">Pages</dt><dd>13,480</dd></div>
+<div><dt class="eyebrow">Avg rating</dt><dd>3.9</dd></div>
+<div><dt class="eyebrow">Authors</dt><dd>36</dd></div>
+</dl>
+</section>
+
+<section aria-labelledby="m-h">
+<h2 id="m-h">Month by month</h2>
+<div class="months">
+<div class="mgrid">
+<div class="month"><div class="mshelf"><span style="height:123px;background:var(--sage)"></span><span style="height:88px;background:var(--blush)"></span><span style="height:92px;background:var(--lavender)"></span><span style="height:90px;background:var(--butter)"></span></div><span class="mname">Jan</span><span class="mcount">4 books</span></div>
+<div class="month"><div class="mshelf"><span style="height:140px;background:var(--sky)"></span><span style="height:100px;background:var(--peach)"></span><span style="height:98px;background:var(--sage)"></span></div><span class="mname">Feb</span><span class="mcount">3 books</span></div>
+<div class="month"><div class="mshelf"><span style="height:98px;background:var(--blush)"></span><span style="height:86px;background:var(--lavender)"></span><span style="height:94px;background:var(--butter)"></span><span style="height:121px;background:var(--sky)"></span></div><span class="mname">Mar</span><span class="mcount">4 books</span></div>
+<div class="month"><div class="mshelf"><span style="height:117px;background:var(--peach)"></span><span style="height:100px;background:var(--sage)"></span><span style="height:92px;background:var(--blush)"></span></div><span class="mname">Apr</span><span class="mcount">3 books</span></div>
+<div class="month"><div class="mshelf"><span style="height:107px;background:var(--lavender)"></span><span style="height:87px;background:var(--butter)"></span><span style="height:101px;background:var(--sky)"></span></div><span class="mname">May</span><span class="mcount">3 books</span></div>
+<div class="month"><div class="mshelf"><span style="height:123px;background:var(--peach)"></span><span style="height:107px;background:var(--sage)"></span><span style="height:86px;background:var(--blush)"></span></div><span class="mname">Jun</span><span class="mcount">3 books</span></div>
+<div class="month"><div class="mshelf"><span style="height:110px;background:var(--lavender)"></span><span style="height:104px;background:var(--butter)"></span><span style="height:117px;background:var(--sky)"></span></div><span class="mname">Jul</span><span class="mcount">3 books</span></div>
+<div class="month"><div class="mshelf"><span style="height:94px;background:var(--peach)"></span><span style="height:119px;background:var(--sage)"></span><span style="height:137px;background:var(--blush)"></span><span style="height:104px;background:var(--lavender)"></span><span style="height:97px;background:var(--butter)"></span></div><span class="mname">Aug</span><span class="mcount">5 books</span></div>
+<div class="month"><div class="mshelf"><span style="height:94px;background:var(--sky)"></span><span style="height:120px;background:var(--peach)"></span><span style="height:78px;background:var(--sage)"></span></div><span class="mname">Sep</span><span class="mcount">3 books</span></div>
+<div class="month"><div class="mshelf"><span style="height:89px;background:var(--lavender)"></span><span style="height:106px;background:var(--blush)"></span><span style="height:94px;background:var(--butter)"></span><span style="height:90px;background:var(--sky)"></span></div><span class="mname">Oct</span><span class="mcount">4 books</span></div>
+<div class="month"><div class="mshelf"><span class="now" style="height:106px"></span></div><span class="mname">Nov</span><span class="mcount">reading</span></div>
+<div class="month"><div class="mshelf"></div><span class="mname">Dec</span><span class="mcount">—</span></div>
+</div>
+<p style="margin:16px 0 0;font-size:13px;color:var(--muted)">Each spine is a book; taller means longer. Dashed: reading now.</p>
+</div>
+</section>
+
+<section class="grid2" style="padding-top:48px">
+<article class="card" aria-labelledby="r-h">
+<h2 id="r-h">How you rated them</h2>
+<div class="bar"><span class="s">★★★★★</span><span class="t"><i style="width:47%"></i></span><span class="n">9</span></div>
+<div class="bar"><span class="s">★★★★☆</span><span class="t"><i style="width:100%"></i></span><span class="n">19</span></div>
+<div class="bar"><span class="s">★★★☆☆</span><span class="t"><i class="low" style="width:53%"></i></span><span class="n">10</span></div>
+<div class="bar"><span class="s">★★☆☆☆</span><span class="t"><i class="low" style="width:16%"></i></span><span class="n">3</span></div>
+<div class="bar" style="margin:0"><span class="s">★☆☆☆☆</span><span class="t"><i class="low" style="width:5%"></i></span><span class="n">1</span></div>
+</article>
+<article class="card" aria-labelledby="a-h">
+<h2 id="a-h">Authors you kept coming back to</h2>
+<ol>
+<li><span class="d" style="background:var(--sage)">1</span><span class="a">Ursula K. Le Guin</span><span class="c">4 books</span></li>
+<li><span class="d" style="background:var(--blush)">2</span><span class="a">Kazuo Ishiguro</span><span class="c">3 books</span></li>
+<li><span class="d" style="background:var(--lavender)">3</span><span class="a">Emily St. John Mandel</span><span class="c">2 books</span></li>
+<li><span class="d" style="background:var(--butter)">4</span><span class="a">Adrian Tchaikovsky</span><span class="c">2 books</span></li>
+<li><span class="d" style="background:var(--sky)">5</span><span class="a">Susanna Clarke</span><span class="c">2 books</span></li>
+</ol>
+</article>
+</section>
+
+<section class="grid2">
+<article class="card boy">
+<div class="cv">Piranesi</div>
+<div>
+<p class="eyebrow accent">Book of the year, so far</p>
+<h2 style="margin:6px 0 0;font-weight:300;font-size:30px;line-height:1.15">Piranesi</h2>
+<p style="margin:4px 0 12px;color:var(--muted)">Susanna Clarke · ★★★★★</p>
+<p style="margin:0;font-style:italic">“The reveal lands because the voice is so gentle.”</p>
+</div>
+</article>
+<article class="facts">
+<div><p class="eyebrow">Longest</p><b>Dune</b><span>617 pages</span></div>
+<div><p class="eyebrow">Shortest</p><b>The Remains of the Day</b><span>245 pages</span></div>
+<div><p class="eyebrow">Busiest month</p><b>August</b><span>5 books</span></div>
+<div><p class="eyebrow">Top label</p><b style="color:var(--accent)">sci-fi</b><span>14 books</span></div>
+</article>
+</section>
+
+<figure class="summary">
+<p class="eyebrow" style="color:var(--accent-on-soft)">Your year, in a sentence</p>
+<blockquote>A science-fiction year with a literary streak: you rated quiet, strange worlds highest and rarely finished a book you didn’t like.</blockquote>
+<figcaption>Written by Claude · 12 Nov</figcaption>
+</figure>
+
+</div>
+</body>
+</html>

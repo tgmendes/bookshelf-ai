@@ -21,7 +21,8 @@ CSV parsing, and recommendation generation. Do not reintroduce embedded AI.
 Server components query Drizzle directly. `/library` provides search, shelves,
 labels, and recommendations; `/library/[id]` displays book details and personal
 notes. `/stats` provides reading analytics. `/settings` manages MCP connections.
-The library UI is for browsing, not editing. Keep the existing theme and fonts.
+The library UI is for browsing, not editing. Follow `docs/redesign/README.md`
+for the Reading Room theme, typography, and layouts (dark by default).
 
 Magic-link auth uses Resend and an email allowlist. Page guards are
 `requireUser`/`requireAdmin`; session-authenticated API guards are

@@ -24,8 +24,15 @@ test('database operations: isolation, retry safety, pagination and token revocat
     assert.equal(initial.created, true);
     assert.equal(initial.book.myRating, 0);
     assert.equal(initial.book.dateRead, null);
+    assert.equal(initial.book.dateStarted, null);
+    await library.saveBook({ id, dateStarted: '2026-11-01' });
+    assert.equal((await library.getBook(id)).dateStarted, '2026-11-01');
     const finished = await library.saveBook({ id, shelf: 'read', myRating: 5, dateRead: '2026-11-15' });
     assert.equal(finished.book.notes, 'First impression');
+    assert.equal(finished.book.dateStarted, '2026-11-01');
+    assert.equal((await library.listBooks({ limit: 50, offset: 0 })).books[0].dateStarted, '2026-11-01');
+    await library.saveBook({ id, dateStarted: null });
+    assert.equal((await library.getBook(id)).dateStarted, null);
     assert.equal(finished.book.dateAdded, '2020-01-02');
     await library.saveBook({ id, notes: null });
     assert.equal((await library.getBook(id)).notes, null);
@@ -61,6 +68,7 @@ test('database operations: isolation, retry safety, pagination and token revocat
     const updated = await library.saveRecommendation({ title: 'foundation', author: 'ISAAC ASIMOV', reason: 'Revised reason' });
     assert.equal(updated.recommendation.id, rec.recommendation.id);
     assert.equal(updated.recommendation.source, 'Your assistant');
+    assert.ok(updated.recommendation.updatedAt instanceof Date);
     await assert.rejects(other.saveRecommendation({ id: rec.recommendation.id, title: 'X', author: 'Y', reason: 'Z' }), /not found/);
     await assert.rejects(other.removeRecommendation(rec.recommendation.id), /not found/);
     assert.equal((await other.listRecommendations({ limit: 50, offset: 0 })).recommendations.length, 0);

@@ -39,6 +39,7 @@ export const books = pgTable('books', {
   myRating: integer('my_rating').default(0),
   avgRating: real('avg_rating'),
   dateRead: date('date_read'),
+  dateStarted: date('date_started'),
   dateAdded: date('date_added').notNull(),
   shelf: text('shelf').notNull(),
   pages: integer('pages').default(0),
@@ -80,6 +81,7 @@ export const recommendations = pgTable('recommendations', {
   coverUrl: text('cover_url'),
   synopsis: text('synopsis'),
   source: text('source'),
+  updatedAt: timestamp('updated_at'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

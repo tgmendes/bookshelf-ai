@@ -24,8 +24,8 @@ export default async function AdminPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="font-display text-3xl mb-6">Admin Dashboard</h1>
+    <div className="room-wrap py-14">
+      <h1 className="font-display text-[44px] font-light mb-6">Admin Dashboard</h1>
       <AdminDashboard
         initialUsers={userRows.map((u) => ({
           ...u,

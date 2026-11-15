@@ -24,3 +24,22 @@ export interface Label {
   name: string;
   color: string;
 }
+
+export interface ReadingBook extends Book {
+  dateStarted: string | null;
+  notes: string | null;
+  updatedAt: string | null;
+  labels: Label[];
+}
+
+export interface SavedRecommendation {
+  id: string;
+  title: string;
+  author: string;
+  reason: string;
+  source: string | null;
+  coverUrl: string | null;
+  synopsis: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}

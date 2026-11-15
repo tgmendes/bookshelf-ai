@@ -52,10 +52,11 @@ async function main() {
     }));
     const saved = await client.callTool({ name: 'save_book', arguments: {
       title: 'Smoke Book', author: 'Test Author', shelf: 'read', myRating: 4,
-      dateRead: '2026-11-15', notes: 'A memorable ending.',
+      dateRead: '2026-11-15', dateStarted: '2026-11-01', notes: 'A memorable ending.',
     } });
     assert.equal(saved.isError, undefined);
     const savedData = JSON.parse((saved.content as Array<{ text: string }>)[0].text);
+    assert.equal(savedData.book.dateStarted, '2026-11-01');
     const recommendation = await client.callTool({ name: 'save_recommendation', arguments: {
       title: 'Smoke Recommendation', author: 'Another Author', reason: 'Because you liked the ending.', source: 'Smoke assistant',
     } });
@@ -69,7 +70,10 @@ async function main() {
     const detail = await request(`/library/${savedData.book.id}`);
     assert.equal(detail.status, 200);
     assert.match(await detail.text(), /A memorable ending/);
-    const recs = await request('/library?shelf=next-read');
+    const legacyRecs = await request('/library?shelf=next-read');
+    assert.equal(legacyRecs.status, 307);
+    assert.equal(legacyRecs.headers.get('location'), '/library#next');
+    const recs = await request('/library#next');
     assert.equal(recs.status, 200);
     assert.match(await recs.text(), /Smoke Recommendation/);
     const recDetail = await request(`/library/${recData.recommendation.id}?rec=1`);

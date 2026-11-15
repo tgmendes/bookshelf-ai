@@ -1,18 +1,20 @@
-export const COVER_GRADIENTS = [
-  'from-teal-400 to-teal-700',
-  'from-cyan-400 to-cyan-700',
-  'from-emerald-400 to-emerald-700',
-  'from-sky-400 to-sky-700',
-  'from-amber-400 to-amber-700',
-  'from-rose-400 to-rose-700',
-  'from-indigo-400 to-indigo-700',
-  'from-lime-400 to-green-700',
-];
+export const PASTELS = ['sage', 'blush', 'butter', 'lavender', 'sky', 'peach'] as const;
 
-export function getCoverGradient(title: string): string {
+export function getBookPastel(id: string): typeof PASTELS[number] {
   let hash = 0;
-  for (let i = 0; i < title.length; i++) {
-    hash = (hash * 31 + title.charCodeAt(i)) >>> 0;
-  }
-  return COVER_GRADIENTS[hash % COVER_GRADIENTS.length];
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return PASTELS[hash % PASTELS.length];
+}
+
+export function getBookColor(id: string) {
+  return `var(--${getBookPastel(id)})`;
+}
+
+export function getSpineSize(pages: number) {
+  const ratio = Math.max(0, Math.min(pages / 620, 1));
+  return { height: Math.round(210 + ratio * 70), width: Math.max(44, Math.round(42 + ratio * 28)) };
+}
+
+export function getMiniSpineHeight(pages: number) {
+  return Math.max(50, Math.min(50 + Math.max(0, pages) / 620 * 90, 140));
 }

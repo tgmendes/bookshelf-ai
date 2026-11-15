@@ -1,298 +1,36 @@
-import { db } from '@/lib/db';
-import { books, recommendations, bookLabels, labels } from '@/lib/db/schema';
-import { eq, and, ne } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, BookOpen } from 'lucide-react';
-import { getCoverGradient } from '@/lib/coverGradients';
-import { StarRating } from '@/components/StarRating';
-import type { Label } from '@/lib/types';
+import { z } from 'zod';
 import { requireUser } from '@/lib/auth/requireUser';
+import { getReadingData } from '@/lib/reading-data';
+import { formatBookDate } from '@/lib/reading-room';
+import { BookCover } from '@/components/BookCover';
+import { BookDetails } from '@/components/BookDetails';
 
 export const dynamic = 'force-dynamic';
 
-
-interface Props {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ rec?: string }>;
-}
-
-export default async function BookDetailPage({ params, searchParams }: Props) {
+export default async function BookDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ rec?: string }> }) {
   const { userId } = await requireUser();
   const { id } = await params;
   const { rec } = await searchParams;
-
-  let book: {
-    id: string;
-    title: string;
-    author: string;
-    myRating: number;
-    avgRating: number | null;
-    dateRead: string | null;
-    shelf: string;
-    pages: number;
-    yearPublished: number | null;
-    bookshelves: string[] | null;
-    coverUrl: string | null;
-    synopsis: string | null;
-    notes?: string | null;
-    source?: string | null;
-    isRecommendation?: boolean;
-    reason?: string;
-  } | null = null;
-
-  // Try books table first, unless rec query param is set
-  if (rec !== '1') {
-    const rows = await db
-      .select()
-      .from(books)
-      .where(and(eq(books.id, id), eq(books.userId, userId)))
-      .limit(1);
-    if (rows[0]) {
-      const r = rows[0];
-      book = {
-        id: r.id,
-        title: r.title,
-        author: r.author,
-        myRating: r.myRating ?? 0,
-        avgRating: r.avgRating ?? null,
-        dateRead: r.dateRead,
-        shelf: r.shelf,
-        pages: r.pages ?? 0,
-        yearPublished: r.yearPublished,
-        bookshelves: r.bookshelves,
-        coverUrl: r.coverUrl ?? null,
-        synopsis: r.synopsis ?? null,
-        notes: r.notes,
-      };
-    }
-  }
-
-  // Fallback to recommendations table
-  if (!book) {
-    const recs = await db
-      .select()
-      .from(recommendations)
-      .where(and(eq(recommendations.id, id), eq(recommendations.userId, userId)))
-      .limit(1);
-    if (recs[0]) {
-      const r = recs[0];
-      book = {
-        id: r.id,
-        title: r.title,
-        author: r.author,
-        myRating: 0,
-        avgRating: null,
-        dateRead: null,
-        shelf: 'to-read',
-        pages: 0,
-        yearPublished: null,
-        bookshelves: null,
-        coverUrl: r.coverUrl ?? null,
-        synopsis: r.synopsis ?? null,
-        isRecommendation: true,
-        reason: r.reason,
-        source: r.source,
-      };
-    }
-  }
-
-  if (!book) {
-    notFound();
-  }
-
-  const gradient = getCoverGradient(book.title);
-
-  // Get other books by same author
-  let otherBooks: { id: string; title: string; coverUrl: string | null }[] = [];
-  if (!book.isRecommendation) {
-    const others = await db
-      .select({ id: books.id, title: books.title, coverUrl: books.coverUrl })
-      .from(books)
-      .where(and(eq(books.author, book.author), ne(books.id, book.id), eq(books.userId, userId)))
-      .limit(6);
-    otherBooks = others;
-  }
-
-  // Get book's labels
-  let bookLabelList: Label[] = [];
-  if (!book.isRecommendation) {
-    bookLabelList = await db
-      .select({ id: labels.id, name: labels.name, color: labels.color })
-      .from(bookLabels)
-      .innerJoin(labels, eq(bookLabels.labelId, labels.id))
-      .where(eq(bookLabels.bookId, id));
-  }
-
+  if (!z.uuid().safeParse(id).success) notFound();
+  const data = await getReadingData(userId);
+  const book = rec !== '1' ? data.books.find((book) => book.id === id) : null;
+  const recommendation = !book ? data.recommendations.find((item) => item.id === id) : null;
+  if (!book && !recommendation) notFound();
+  const item = book ?? recommendation!;
+  const others = book ? data.books.filter((other) => other.id !== book.id && other.author === book.author).slice(0, 6) : [];
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 relative">
-      {/* Blurred cover backdrop */}
-      {book.coverUrl && (
-        <div className="absolute top-0 left-0 right-0 h-80 overflow-hidden -z-10 pointer-events-none">
-          <img
-            src={book.coverUrl}
-            alt=""
-            aria-hidden="true"
-            className="w-full h-full object-cover blur-3xl opacity-15 scale-110"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background" />
-        </div>
+    <div className="room-wrap pb-20 pt-8">
+      <Link href={recommendation ? '/library#next' : '/library#shelf'} className="room-link mb-8 text-sm">← Back to {recommendation ? 'Up next' : 'the shelf'}</Link>
+      <div className="mb-10 flex justify-center sm:justify-start"><BookCover book={item} /></div>
+      {book ? <BookDetails book={book} fullPage /> : recommendation && (
+        <article className="grid min-w-0 grid-cols-1 gap-8 rounded-[20px] bg-surface p-6 sm:p-9 lg:grid-cols-2 lg:gap-10">
+          <div className="min-w-0"><p className="eyebrow text-accent">Up next</p><h1 className="mt-2 break-words font-display text-[44px] font-light leading-[1.1]">{recommendation.title}</h1><p className="mt-1.5 text-muted">{recommendation.author}</p>{recommendation.synopsis && <p className="mt-5 whitespace-pre-line break-words">{recommendation.synopsis}</p>}</div>
+          <div className="min-w-0"><h2 className="eyebrow">Why it was recommended</h2><p className="mt-4 whitespace-pre-wrap break-words border-l-2 border-accent pl-3.5">{recommendation.reason}</p><p className="mt-6 text-[13px] text-muted">Saved by {recommendation.source ?? 'your assistant'}{recommendation.createdAt && <> · {formatBookDate(recommendation.createdAt, true)}</>}</p></div>
+        </article>
       )}
-
-      <Link
-        href={book.isRecommendation ? '/library?shelf=next-read' : '/library'}
-        className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors mb-8 animate-fade-in"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Library
-      </Link>
-
-      <div className="flex flex-col md:flex-row gap-8 md:gap-12">
-        {/* Cover */}
-        <div className="flex-shrink-0 mx-auto md:mx-0 animate-fade-in-up">
-          <div
-            className={`relative w-56 rounded-2xl bg-gradient-to-br ${gradient} overflow-hidden shadow-lg`}
-            style={{ aspectRatio: '3/4' }}
-          >
-            {book.coverUrl ? (
-              <img src={book.coverUrl} alt={book.title} className="absolute inset-0 w-full h-full object-cover" />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <BookOpen className="w-16 h-16 text-white/30" />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Details */}
-        <div className="flex-1 min-w-0 animate-fade-in-up stagger-2">
-          <h1 className="font-display text-3xl md:text-4xl text-foreground leading-snug mb-1">
-            {book.title}
-          </h1>
-          <p className="text-lg text-muted mb-5">{book.author}</p>
-
-          {/* Meta badges */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {book.isRecommendation && (
-              <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary-light text-primary">
-                Recommended{book.source ? ` · ${book.source}` : ''}
-              </span>
-            )}
-            {book.pages > 0 && (
-              <span className="px-3 py-1 rounded-full text-xs font-medium bg-surface border border-border text-muted">
-                {book.pages.toLocaleString()} pages
-              </span>
-            )}
-            {book.yearPublished && (
-              <span className="px-3 py-1 rounded-full text-xs font-medium bg-surface border border-border text-muted">
-                {book.yearPublished}
-              </span>
-            )}
-          </div>
-
-          {/* Reading history is managed by the connected assistant. */}
-          {!book.isRecommendation && (
-            <div className="mb-6">
-              <p className="text-sm text-muted mb-2">{book.shelf === 'read' ? 'Read' : book.shelf === 'currently-reading' ? 'Currently reading' : 'Want to read'}</p>
-              <StarRating rating={book.myRating} />
-            </div>
-          )}
-
-          {book.avgRating && (
-            <div className="mb-6">
-              <p className="text-xs text-muted mb-1">Community average</p>
-              <p className="text-sm font-medium text-foreground">{book.avgRating.toFixed(2)} / 5</p>
-            </div>
-          )}
-
-          {book.dateRead && (
-            <div className="mb-6">
-              <p className="text-xs text-muted mb-1">Date read</p>
-              <p className="text-sm font-medium text-foreground">
-                {new Date(book.dateRead).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </p>
-            </div>
-          )}
-
-          {/* Synopsis */}
-          {book.notes && (
-            <div className="mb-6">
-              <h2 className="font-display text-xl text-foreground mb-2">My thoughts</h2>
-              <p className="text-sm text-muted leading-relaxed whitespace-pre-wrap">{book.notes}</p>
-            </div>
-          )}
-          {book.synopsis && (
-            <div className="mb-6">
-              <h2 className="font-display text-xl text-foreground mb-2">Synopsis</h2>
-              <p className="text-sm text-muted leading-relaxed">{book.synopsis}</p>
-            </div>
-          )}
-
-          {/* Recommendation reason */}
-          {book.isRecommendation && book.reason && (
-            <div className="mb-6">
-              <h2 className="font-display text-xl text-foreground mb-2">Why it was recommended</h2>
-              <p className="text-sm text-muted leading-relaxed italic">&ldquo;{book.reason}&rdquo;</p>
-            </div>
-          )}
-
-          {/* Shelves/tags */}
-          {book.bookshelves && book.bookshelves.length > 0 && (
-            <div className="mb-6">
-              <h2 className="font-display text-xl text-foreground mb-2">Shelves</h2>
-              <div className="flex flex-wrap gap-1.5">
-                {book.bookshelves.map((shelf) => (
-                  <span key={shelf} className="px-2.5 py-0.5 bg-surface border border-border text-muted text-xs rounded-full">
-                    {shelf}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Labels */}
-          {bookLabelList.length > 0 && (
-            <div className="mb-6">
-              <h2 className="font-display text-xl text-foreground mb-2">Labels</h2>
-              <div className="flex flex-wrap gap-2">{bookLabelList.map((label) => (
-                <span key={label.id} className="px-2.5 py-1 text-xs rounded-full text-white" style={{ backgroundColor: label.color }}>{label.name}</span>
-              ))}</div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Other books by same author */}
-      {otherBooks.length > 0 && (
-        <div className="mt-12 animate-fade-in-up stagger-5">
-          <h2 className="font-display text-2xl text-foreground mb-4">
-            More by {book.author}
-          </h2>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-            {otherBooks.map((other) => {
-              const g = getCoverGradient(other.title);
-              return (
-                <Link key={other.id} href={`/library/${other.id}`} className="group">
-                  <div
-                    className={`relative w-full rounded-xl bg-gradient-to-br ${g} overflow-hidden`}
-                    style={{ aspectRatio: '3/4' }}
-                  >
-                    {other.coverUrl ? (
-                      <img src={other.coverUrl} alt={other.title} className="absolute inset-0 w-full h-full object-cover" />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <BookOpen className="w-8 h-8 text-white/30" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                  </div>
-                  <p className="mt-1.5 text-xs text-foreground font-medium line-clamp-1">{other.title}</p>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {others.length > 0 && <section className="pt-12" aria-labelledby="same-author-heading"><h2 id="same-author-heading" className="section-title">More by {book!.author}</h2><div className="mt-7 flex flex-wrap gap-7">{others.map((other) => <Link href={`/library/${other.id}`} key={other.id} className="max-w-[140px]"><BookCover book={other} small /><p className="mt-3 text-sm">{other.title}</p></Link>)}</div></section>}
     </div>
   );
 }

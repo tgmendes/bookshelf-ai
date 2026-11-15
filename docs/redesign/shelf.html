@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenShelf — Shelf (reference mockup)</title>
+<!-- Reference mockup for the OpenShelf redesign ("Reading Room"). Static sample data.
+     Implementation spec: docs/redesign/README.md. Tokens below map 1:1 to globals.css. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,200;0,300;0,400;0,500;0,600;1,300&family=Lato:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root, [data-theme="light"] {
+  --bg: #F3EDE2; --surface: #FBF8F2; --surface-2: #EDE4D3; --border: #DDD3C2; --border-strong: #CFC4B1;
+  --fg: #2E2A25; --muted: #6B6459;
+  --accent: #1F6F66; --accent-hover: #16524B; --accent-soft: #E3EFEC; --accent-on-soft: #16524B;
+  --invert-bg: #2E2A25; --invert-fg: #F3EDE2;
+  --ledge: #D8C7A8; --ledge-shadow: #C4B08D; --spine-ink: #2E2A25;
+  --sage: #C9DCC8; --blush: #EBC9C3; --butter: #EFDDA8; --lavender: #D4CCE6; --sky: #C4D9E6; --peach: #F0CFAE;
+  --shadow: rgba(46,42,37,.45);
+}
+[data-theme="dark"] {
+  --bg: #121110; --surface: #1B1A18; --surface-2: #26231F; --border: #2E2B27; --border-strong: #3D3832;
+  --fg: #EEE8DD; --muted: #A39B8E;
+  --accent: #5DBFB0; --accent-hover: #7FD0C4; --accent-soft: rgba(93,191,176,.13); --accent-on-soft: #8ED6CB;
+  --invert-bg: #EEE8DD; --invert-fg: #121110;
+  --ledge: #3A322A; --ledge-shadow: #241F1A; --spine-ink: #1A1816;
+  --sage: #A9C2A8; --blush: #D3ACA5; --butter: #D9C68E; --lavender: #B6ADCF; --sky: #A6BFD0; --peach: #D8B492;
+  --shadow: rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Lato,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}a:hover{color:var(--accent-hover)}
+.wrap{max-width:1160px;margin:0 auto;padding:0 32px}
+.display{font-family:Raleway,sans-serif}
+.eyebrow{margin:0;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.eyebrow.accent{color:var(--accent)}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:28px 0;border-bottom:1px solid var(--border)}
+.logo{font-family:Raleway,sans-serif;font-weight:300;font-size:26px;letter-spacing:.18em;text-transform:uppercase}
+.logo b{font-weight:600;color:var(--accent)}
+nav{display:flex;flex-wrap:wrap;gap:4px}
+nav a{padding:10px 16px;border-radius:999px;color:var(--fg);text-decoration:none;font-size:14px}
+nav a:hover{background:var(--surface-2);color:var(--fg)}
+nav a[aria-current="page"]{background:var(--invert-bg);color:var(--invert-fg);font-weight:700}
+.right{display:flex;align-items:center;gap:10px}
+.sync{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:var(--accent-soft);color:var(--accent-on-soft);font-size:13px}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.icon-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--border-strong);background:transparent;color:var(--fg);display:grid;place-items:center;cursor:pointer}
+.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:48px;padding:56px 0 48px;align-items:center}
+.now{display:flex;gap:32px;align-items:flex-end}
+.cover{width:180px;height:270px;flex-shrink:0;border-radius:4px 10px 10px 4px;background:var(--sage);color:var(--spine-ink);box-shadow:inset 10px 0 0 rgba(0,0,0,.08),0 18px 40px -18px var(--shadow);display:flex;flex-direction:column;justify-content:space-between;padding:24px 20px 24px 28px}
+.cover small{font-family:Raleway,sans-serif;font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+.cover span{font-family:Raleway,sans-serif;font-weight:300;font-size:30px;line-height:1.1}
+h1{margin:10px 0 0;font-family:Raleway,sans-serif;font-weight:300;font-size:44px;line-height:1.1}
+.meta{margin:6px 0 0;color:var(--muted)}
+.note{margin:0;padding:28px 32px;background:var(--surface);border-radius:16px}
+.note blockquote{margin:12px 0 0;font-family:Raleway,sans-serif;font-style:italic;font-weight:300;font-size:22px;line-height:1.45}
+.note figcaption{margin-top:16px;font-size:13px;color:var(--muted)}
+section{padding-top:40px}
+.row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:28px}
+h2{margin:0;font-family:Raleway,sans-serif;font-weight:400;font-size:30px}
+h2 small{font-family:Lato,sans-serif;font-size:16px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:44px;padding:0 18px;border:1px solid var(--border-strong);background:transparent;color:var(--fg);border-radius:999px;font:inherit;font-size:14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--invert-bg);color:var(--invert-fg);border-color:var(--invert-bg)}
+.shelf-scroll{overflow-x:auto;padding-top:20px}
+.shelf{display:flex;align-items:flex-end;gap:6px;padding:0 12px;min-width:max-content;border-bottom:14px solid var(--ledge);box-shadow:0 10px 0 -4px var(--ledge-shadow)}
+.spine{border:0;border-radius:3px 3px 0 0;padding:14px 0;color:var(--spine-ink);display:flex;align-items:flex-start;justify-content:center;cursor:pointer;box-shadow:inset -4px 0 0 rgba(0,0,0,.08);transition:transform .2s ease}
+.spine:hover{transform:translateY(-8px)}
+.spine[aria-pressed="true"]{transform:translateY(-14px);outline:2px solid var(--accent);outline-offset:3px}
+.spine span{writing-mode:vertical-rl;transform:rotate(180deg);font-family:Raleway,sans-serif;font-weight:500;font-size:13px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;max-height:88%}
+.detail{margin-top:40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:40px;padding:36px;background:var(--surface);border-radius:20px}
+.detail h3{margin:8px 0 0;font-family:Raleway,sans-serif;font-weight:300;font-size:38px;line-height:1.1}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.tag{padding:4px 12px;border-radius:999px;background:var(--surface-2);font-size:13px}
+.ratings{display:flex;gap:40px}
+.stars{margin:4px 0 0;font-size:26px;color:var(--accent);letter-spacing:2px}
+.score{margin:4px 0 0;font-family:Raleway,sans-serif;font-size:26px}
+.score small{font-size:14px;color:var(--muted)}
+.notes{padding:20px 24px;background:var(--bg);border-radius:14px;margin-top:24px}
+.notes p:last-child{margin:6px 0 0;font-style:italic}
+.recs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.rec{display:flex;flex-direction:column;gap:14px;padding:24px;background:var(--surface);border-radius:16px;border-top:6px solid var(--c)}
+.rec h3{margin:0;font-family:Raleway,sans-serif;font-weight:500;font-size:21px;line-height:1.2}
+.rec .by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.rec .why{margin:0;padding-left:14px;border-left:2px solid var(--accent)}
+.rec .src{margin:auto 0 0;font-size:12px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:var(--border);border-radius:16px;overflow:hidden}
+.stats div{padding:28px;background:var(--surface)}
+.stats b{display:block;font-family:Raleway,sans-serif;font-weight:300;font-size:48px;line-height:1}
+.stats span{display:block;margin-top:8px;color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:640px){.wrap{padding:0 16px}.now{flex-direction:column;align-items:flex-start}h1{font-size:36px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+<span class="logo">Open<b>Shelf</b></span>
+<nav aria-label="Main">
+<a href="#" aria-current="page">Shelf</a>
+<a href="#next">Up next</a>
+<a href="reading-year.html">Reading year</a>
+<a href="#">Connections</a>
+</nav>
+<div class="right">
+<div class="sync"><i aria-hidden="true"></i>Updated by Claude · 2 hours ago</div>
+<button class="icon-btn" type="button" aria-label="Toggle light or dark theme" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+</button>
+</div>
+</header>
+
+<section class="hero" aria-labelledby="now-h">
+<div class="now">
+<div class="cover"><small>Ursula K. Le Guin</small><span>The Dis&shy;possessed</span></div>
+<div>
+<p class="eyebrow accent">Reading now</p>
+<h1 id="now-h">The Dispossessed</h1>
+<p class="meta">Ursula K. Le Guin · 1974 · 387 pages</p>
+<p class="meta" style="margin-top:14px;font-size:14px">Reading since 3 Nov</p>
+</div>
+</div>
+<figure class="note">
+<p class="eyebrow">Your note</p>
+<blockquote>“Shevek’s two worlds keep arguing in my head. Anarres feels less like utopia every chapter, and I think that’s the point.”</blockquote>
+<figcaption>Saved by Claude from your chat on 9 Nov</figcaption>
+</figure>
+</section>
+
+<section id="shelf" aria-labelledby="shelf-h">
+<div class="row">
+<h2 id="shelf-h">The shelf <small>· 2026 · 42 read</small></h2>
+<div class="chips">
+<button class="chip" aria-pressed="true">Read</button>
+<button class="chip" aria-pressed="false">Want to read</button>
+<button class="chip" aria-pressed="false">By rating</button>
+</div>
+</div>
+<div class="shelf-scroll">
+<div class="shelf">
+<button class="spine" aria-pressed="true" style="height:220px;width:46px;background:var(--lavender)"><span>Piranesi</span><i class="sr"> by Susanna Clarke</i></button>
+<button class="spine" aria-pressed="false" style="height:250px;width:52px;background:var(--sky)"><span>The Left Hand of Darkness</span></button>
+<button class="spine" aria-pressed="false" style="height:268px;width:60px;background:var(--butter)"><span>Project Hail Mary</span></button>
+<button class="spine" aria-pressed="false" style="height:236px;width:48px;background:var(--blush)"><span>Klara and the Sun</span></button>
+<button class="spine" aria-pressed="false" style="height:258px;width:58px;background:var(--peach)"><span>Tomorrow, and Tomorrow, and Tomorrow</span></button>
+<button class="spine" aria-pressed="false" style="height:276px;width:64px;background:var(--sage)"><span>The Overstory</span></button>
+<button class="spine" aria-pressed="false" style="height:214px;width:42px;background:var(--lavender)"><span>Sea of Tranquility</span></button>
+<button class="spine" aria-pressed="false" style="height:244px;width:54px;background:var(--blush)"><span>Circe</span></button>
+<button class="spine" aria-pressed="false" style="height:262px;width:58px;background:var(--sky)"><span>A Memory Called Empire</span></button>
+<button class="spine" aria-pressed="false" style="height:240px;width:50px;background:var(--butter)"><span>Educated</span></button>
+<button class="spine" aria-pressed="false" style="height:210px;width:42px;background:var(--peach)"><span>The Remains of the Day</span></button>
+<button class="spine" aria-pressed="false" style="height:280px;width:70px;background:var(--sage)"><span>Dune</span></button>
+</div>
+</div>
+
+<article class="detail" aria-live="polite">
+<div>
+<p class="eyebrow accent">Read 14 Oct</p>
+<h3>Piranesi</h3>
+<p class="meta">Susanna Clarke · 2020 · 272 pages</p>
+<p style="margin:20px 0 0;font-size:16px;max-width:52ch">A man lives alone in a vast house of endless halls, tides and statues, keeping careful journals, until the entries start to contradict what he believes about himself.</p>
+<div class="tags"><span class="tag">fantasy</span><span class="tag">favourites</span></div>
+</div>
+<div>
+<div class="ratings">
+<div><p class="eyebrow">You</p><p class="stars" aria-label="5 of 5">★★★★★</p></div>
+<div><p class="eyebrow">Community</p><p class="score">4.2<small> / 5</small></p></div>
+</div>
+<div class="notes"><p class="eyebrow">Your notes</p><p>Read it in two sittings. The reveal lands because the voice is so gentle.</p></div>
+<p style="margin:20px 0 0"><a href="#" style="font-weight:700;font-size:14px">Open book page →</a></p>
+</div>
+</article>
+</section>
+
+<section id="next" aria-labelledby="next-h" style="padding-top:72px">
+<h2 id="next-h">Up next</h2>
+<p class="meta" style="margin:6px 0 28px">Recommendations your assistant saved, with its reasons.</p>
+<div class="recs">
+<article class="rec" style="--c:var(--sage)"><div><h3>A Psalm for the Wild-Built</h3><p class="by">Becky Chambers</p></div><p class="why">You rated Piranesi 5 stars for its gentleness. This is a short, hopeful story about a tea monk and a robot with the same calm.</p><p class="src">Saved by Claude · 12 Nov</p></article>
+<article class="rec" style="--c:var(--butter)"><div><h3>Babel</h3><p class="by">R. F. Kuang</p></div><p class="why">You keep reading books that question empire (The Dispossessed, A Memory Called Empire). This one uses translation to do it.</p><p class="src">Saved by Claude · 8 Nov</p></article>
+<article class="rec" style="--c:var(--sky)"><div><h3>The Lathe of Heaven</h3><p class="by">Ursula K. Le Guin</p></div><p class="why">Le Guin is your most-read author this year, and this is her shortest novel you haven’t read.</p><p class="src">Saved by Claude · 1 Nov</p></article>
+</div>
+</section>
+
+<section aria-labelledby="stats-h" style="padding:72px 0 80px">
+<div class="row">
+<h2 id="stats-h">This year so far</h2>
+<a href="reading-year.html" style="font-weight:700;font-size:14px">See your reading year →</a>
+</div>
+<div class="stats">
+<div><b>42</b><span>books read</span></div>
+<div><b>13,480</b><span>pages</span></div>
+<div><b>3.9</b><span>average rating</span></div>
+<div><b style="color:var(--accent)">Le Guin</b><span>most-read author</span></div>
+</div>
+</section>
+
+</div>
+<script>
+// Mockup-only: spine selection. In the app this is a client component; see README.
+document.querySelectorAll('.spine').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.spine').forEach(function(x){x.setAttribute('aria-pressed','false')});b.setAttribute('aria-pressed','true')})});
+</script>
+</body>
+</html>

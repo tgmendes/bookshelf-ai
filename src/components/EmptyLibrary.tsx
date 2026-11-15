@@ -9,7 +9,7 @@ export function EmptyLibrary() {
       </div>
       <h2 className="font-display text-3xl text-foreground mb-3">Your reading life, on display</h2>
       <p className="text-muted mb-6">Connect your assistant to add the books you&apos;ve read, keep your ratings and thoughts, and save recommendations. They&apos;ll appear here for you to browse.</p>
-      <Link href="/settings" className="inline-flex rounded-xl bg-primary text-white px-5 py-2.5 text-sm font-medium">Connect an assistant</Link>
+      <Link href="/settings" className="inline-flex min-h-11 items-center rounded-full bg-accent text-bg px-5 py-2.5 text-sm font-bold">Connect an assistant</Link>
     </div>
   );
 }

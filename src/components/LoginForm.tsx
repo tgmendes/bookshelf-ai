@@ -72,14 +72,15 @@ export function LoginForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="you@example.com"
+        aria-label="Email address"
         required
-        className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+        className="min-h-11 w-full px-4 py-3 bg-surface border border-border-strong rounded-xl text-foreground placeholder:text-muted focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors"
       />
 
       <button
         type="submit"
         disabled={status === 'loading'}
-        className="w-full px-4 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="min-h-11 w-full px-4 py-3 bg-accent text-bg rounded-full font-bold hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {status === 'loading' ? 'Sending...' : 'Send magic link'}
       </button>

@@ -74,24 +74,24 @@ export function McpConnections() {
         <p className="text-sm text-muted">Create a separate token for each assistant. Paste it into your client&apos;s secure connection settings—not into a chat. Tokens remain valid until revoked. OAuth-only clients are not supported.</p>
         <form onSubmit={create} className="flex flex-wrap gap-3">
           <input aria-label="Connection name" value={name} onChange={(event) => setName(event.target.value)} required maxLength={100}
-            placeholder="Connection name" className="flex-1 min-w-40 rounded-xl border border-border bg-background px-3 py-2 text-sm" />
-          <button disabled={busy || loading || !name.trim()} className="rounded-xl bg-primary text-white px-4 py-2 text-sm disabled:opacity-50">Create token</button>
+            placeholder="Connection name" className="min-h-11 flex-1 min-w-40 rounded-xl border border-border-strong bg-background px-3 py-2 text-sm" />
+          <button disabled={busy || loading || !name.trim()} className="min-h-11 rounded-full bg-accent text-bg px-4 py-2 text-sm font-bold disabled:opacity-50">Create token</button>
         </form>
         {secret && (
           <div className="rounded-xl bg-primary-light p-4 space-y-3" role="status">
             <p className="text-sm font-medium">Copy this token now. It will not be shown again.</p>
             <code className="block text-sm break-all select-all">{secret}</code>
             <p className="text-xs text-muted">Authorization header value: <code>Bearer YOUR_TOKEN</code></p>
-            <button onClick={() => setSecret(null)} className="text-sm text-primary underline">I&apos;ve saved it</button>
+            <button onClick={() => setSecret(null)} className="min-h-11 text-sm text-accent-on-soft underline">I&apos;ve saved it</button>
           </div>
         )}
-        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{error}</p>}
         {loading ? <p className="text-sm text-muted">Loading connections…</p> : (
           <ul className="divide-y divide-border">
             {tokens.map((token) => (
               <li key={token.id} className="flex items-center justify-between gap-4 py-3">
                 <div><p className="text-sm font-medium">{token.name}</p><p className="text-xs text-muted">{token.prefix}… · Created {new Date(token.createdAt).toLocaleDateString()}</p></div>
-                <button onClick={() => revoke(token.id)} disabled={busy} className="text-sm text-muted hover:text-red-600 disabled:opacity-50">Revoke</button>
+                <button onClick={() => revoke(token.id)} disabled={busy} className="min-h-11 min-w-11 text-sm text-muted hover:text-accent disabled:opacity-50">Revoke</button>
               </li>
             ))}
             {!tokens.length && <li className="py-3 text-sm text-muted">No assistant connections yet.</li>}

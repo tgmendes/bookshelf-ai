@@ -99,6 +99,28 @@ Recommendations are separate from reading history. Saving or finishing a book
 does not automatically delete its recommendation. The assistant can remove it
 if asked.
 
+## Reading Room redesign
+
+The read-only shelf and Reading year pages follow `docs/redesign/README.md`.
+Dark is the default; the theme toggle preserves an explicit light preference.
+Book colours are derived from their IDs. Charts use CSS, not a chart library.
+The optional assistant-written year summary is not included.
+
+For an existing database, apply `drizzle/reading-room-upgrade.sql` after the
+agent-first upgrade and before running this code. Alternatively, use `db:push`
+against a database whose schema is already managed by Drizzle:
+
+```sh
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/reading-room-upgrade.sql
+```
+
+This only adds nullable `books.date_started` and
+`recommendations.updated_at`. The MCP field is `dateStarted` (`YYYY-MM-DD`):
+omission preserves it, `null` clears it, and the assistant must never infer it.
+Older recommendations use their creation time for the updated indicator until
+they are edited. Reading totals use finished dates, not import/start dates.
+Shelf headings display the actual year range represented by the filtered books.
+
 ### Typical conversations
 
 - “I finished Dune.” The assistant finds the book, asks for missing rating/date
@@ -132,6 +154,18 @@ and recommendation pages:
 ```sh
 TEST_DATABASE_URL=postgresql://.../openshelf_test TEST_APP_URL=http://localhost:3105 npx tsx tests/app-smoke.ts
 ```
+
+For Chromium interaction, responsive, touch-target and automated WCAG/contrast
+checks against that same running disposable app:
+
+```sh
+npx playwright install chromium
+TEST_DATABASE_URL=postgresql://.../openshelf_test TEST_APP_URL=http://localhost:3105 npm run test:browser
+```
+
+The browser suite opens the supplied mockups and saves reference and real-page
+screenshots in `test-results/reading-room/`, at 1280px and 390px in both themes.
+It does not write to a production database.
 
 ### Dependency security
 

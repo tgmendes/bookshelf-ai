@@ -50,15 +50,18 @@ test('official MCP client initializes, discovers schemas, reads and writes via s
     await client.connect(transport);
     assert.match(client.getInstructions()!, /Do not invent ratings/);
     const { tools } = await client.listTools();
+    assert.ok(tools.find((tool) => tool.name === 'save_book')?.inputSchema.properties?.dateStarted);
+    assert.match(client.getInstructions()!, /never infer it from dateAdded/);
     assert.deepEqual(tools.map((tool) => tool.name).sort(), [
       'get_book', 'list_books', 'list_recommendations', 'lookup_book_metadata',
       'remove_recommendation', 'save_book', 'save_recommendation',
     ]);
     const read = await client.callTool({ name: 'list_books', arguments: {} });
     assert.equal(read.isError, undefined);
-    const saved = await client.callTool({ name: 'save_book', arguments: { title: 'Dune', author: 'Frank Herbert', myRating: 5, shelf: 'read' } });
+    const saved = await client.callTool({ name: 'save_book', arguments: { title: 'Dune', author: 'Frank Herbert', myRating: 5, shelf: 'read', dateStarted: '2026-11-01' } });
     assert.equal(saved.isError, undefined);
     assert.equal(calls.length, 1);
+    assert.equal((calls[0] as { dateStarted: string }).dateStarted, '2026-11-01');
     const invalid = await client.callTool({ name: 'save_book', arguments: { myRating: 9 } });
     assert.equal(invalid.isError, true);
     assert.equal(calls.length, 1);

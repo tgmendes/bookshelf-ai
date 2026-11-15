@@ -21,7 +21,7 @@ export default async function LoginPage() {
           <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-5 animate-scale-in">
             <BookOpen className="w-7 h-7 text-white" />
           </div>
-          <h1 className="font-display text-4xl text-foreground tracking-tight mb-2">
+          <h1 className="font-display text-[44px] font-light text-foreground leading-tight mb-2">
             Sign in to OpenShelf
           </h1>
           <p className="text-muted text-sm">

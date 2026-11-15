@@ -20,6 +20,7 @@ export const bookInput = z.object({
   shelf: z.enum(['read', 'currently-reading', 'to-read']).optional(),
   myRating: z.number().int().min(0).max(5).nullable().optional(),
   dateRead: date.nullable().optional(),
+  dateStarted: date.nullable().optional(),
   dateAdded: date.optional(),
   pages: z.number().int().min(0).max(100000).nullable().optional(),
   yearPublished: z.number().int().min(1).max(9999).nullable().optional(),

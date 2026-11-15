@@ -77,7 +77,7 @@ export function AdminDashboard({ initialUsers, initialConfig }: Props) {
     'w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30';
   const btnClass =
     'rounded-xl px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50';
-  const primaryBtn = `${btnClass} bg-primary text-white hover:bg-primary/90`;
+  const primaryBtn = `${btnClass} bg-accent text-bg hover:bg-accent-hover`;
   const ghostBtn = `${btnClass} text-muted hover:bg-primary-light hover:text-foreground`;
 
   return (

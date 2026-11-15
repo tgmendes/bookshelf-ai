@@ -80,7 +80,7 @@ export function createLibraryService(userId: string) {
         if (id && !matches[0]) throw new Error('Recommendation not found.');
         if (matches.length > 1) throw new Error('Multiple recommendations match. Update by id.');
         if (matches[0]) {
-          const [recommendation] = await tx.update(recommendations).set(values)
+          const [recommendation] = await tx.update(recommendations).set({ ...values, updatedAt: new Date() })
             .where(and(eq(recommendations.id, matches[0].id), eq(recommendations.userId, userId))).returning();
           return { recommendation, created: false };
         }
