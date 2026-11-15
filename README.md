@@ -22,8 +22,17 @@ application's canonical URL; use HTTPS for remote deployments.
 
 ### Upgrading an existing installation
 
-Back up the database, then apply `npm run db:push` with the intended
-`DATABASE_URL` **before deploying** this code. The additive schema changes are:
+Back up the database, then apply the standalone additive upgrade with the
+intended `DATABASE_URL` **before deploying** this code:
+
+```sh
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/agent-first-upgrade.sql
+```
+
+The migration is transactional and safe to repeat. It leaves existing
+constraints and records untouched rather than asking Drizzle to reconcile
+historical schema differences. Use `npm run db:push` to initialize a new local
+database. The additive schema changes are:
 
 - `books.notes`: optional personal reading notes.
 - `recommendations.source`: optional attribution for a recommendation.
